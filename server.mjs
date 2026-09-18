@@ -31,7 +31,7 @@ export async function createApi({ffmpeg,exportDir,settingsPath}={}){
    const u=new URL(req.url,`http://${host}`),parts=u.pathname.split('/').filter(Boolean);
    if(req.method==='GET'&&parts[1]==='output')return json(res,200,{directory:output.get()});
    if(req.method==='POST'&&parts[1]==='output'){const cfg=JSON.parse(await body(req));if([...jobs.values()].some(j=>['frames','finishing'].includes(j.state)))throw Error('Wait for the current export before changing folder.');return json(res,200,{directory:await output.set(cfg.directory)});}
-   if(req.method==='GET'&&parts[1]==='health')return json(res,200,{ffmpeg:!!ffmpeg,version:'0.4.3',encoder:encoderInfo.selected,hardwareEncoders:encoderInfo.hardware,encoderMode:encoderInfo.mode,gpu:encoderInfo.gpu,ffmpegSource:encoderInfo.ffmpegSource});
+   if(req.method==='GET'&&parts[1]==='health')return json(res,200,{ffmpeg:!!ffmpeg,version:'0.4.4',encoder:encoderInfo.selected,hardwareEncoders:encoderInfo.hardware,encoderMode:encoderInfo.mode,gpu:encoderInfo.gpu,ffmpegSource:encoderInfo.ffmpegSource});
    if(req.method==='POST'&&parts[1]==='media'){
     const id=randomUUID(),dest=path.join(root,id+'.media');let size=0;const stream=createWriteStream(dest);
     try{req.on('data',b=>{size+=b.length;if(size>MAX_FILE)req.destroy(Error('File exceeds 50 GB.'));});await pipeline(req,stream);}catch(e){await rm(dest,{force:true});throw e;}
@@ -68,7 +68,7 @@ export async function createApi({ffmpeg,exportDir,settingsPath}={}){
    }
    if(req.method==='GET'&&parts[3]==='status')return json(res,200,{state:j.state,error:j.error,received:j.received,savedPath:j.state==='complete'?j.finalPath:null,outputDirectory:j.outputDirectory});
    if(req.method==='GET'&&parts[3]==='download'){
-    if(j.state!=='complete')throw Error('Export is not ready.');res.setHeader('Content-Type','video/mp4');res.setHeader('Content-Disposition','attachment; filename="RanCut-v0.4.3.mp4"');res.setHeader('Content-Length',(await stat(j.output)).size);await pipeline(createReadStream(j.output),res);return;
+    if(j.state!=='complete')throw Error('Export is not ready.');res.setHeader('Content-Type','video/mp4');res.setHeader('Content-Disposition','attachment; filename="RanCut-v0.4.4.mp4"');res.setHeader('Content-Length',(await stat(j.output)).size);await pipeline(createReadStream(j.output),res);return;
    }
    return next();
   }catch(e){if(!res.headersSent)json(res,422,{error:e.message||'Local processing failed.'});else res.destroy();}
@@ -111,7 +111,7 @@ async function detectEncoders(ffmpeg){
  }catch{return {selected:'libx264',mode:'cpu',available:['libx264'],hardware:[],gpu,ffmpegSource:ffmpeg};}
 }
 async function canUseEncoder(ffmpeg,encoder){
- try{const c=spawn(ffmpeg,['-hide_banner','-loglevel','error','-f','lavfi','-i','color=c=black:s=16x16:d=0.1','-frames:v','1','-an','-c:v',encoder,'-f','null','-'],{windowsHide:true});let error='';c.stderr.on('data',b=>{error+=b.toString();});await new Promise((resolve,reject)=>{c.once('error',reject);c.once('close',code=>code===0?resolve():reject(Error(error||'encoder unavailable')));});return true;}catch{return false;}
+ try{const c=spawn(ffmpeg,['-hide_banner','-loglevel','error','-f','lavfi','-i','color=c=black:s=256x256:d=0.1','-frames:v','1','-an','-c:v',encoder,'-pix_fmt','yuv420p','-f','null','-'],{windowsHide:true});let error='';c.stderr.on('data',b=>{error+=b.toString();});await new Promise((resolve,reject)=>{c.once('error',reject);c.once('close',code=>code===0?resolve():reject(Error(error||'encoder unavailable')));});return true;}catch{return false;}
 }
 function videoEncoderArgs(encoder,quality){
  const cq=quality==='Maximum'?'16':quality==='Good'?'22':'18';

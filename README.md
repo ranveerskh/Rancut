@@ -1,15 +1,16 @@
-# RanCut 0.4.3 — RTX/NVENC detection update
+# RanCut 0.4.4 — RTX/NVENC probe fix
 
 RanCut is a local video editor for YouTube creators. It runs locally; no account or cloud upload is required for editing.
 
-## What changed in 0.4.3
+## What changed in 0.4.4
 
 - Installer workflow builds the NSIS installer without attempting a GitHub release or requiring `GH_TOKEN`.
 - Export frames are sent as high-quality JPEG instead of uncompressed RGBA, cutting the local 4K transfer bottleneck while keeping the final H.264 quality setting.
 - Saved projects remember each imported file's source path/folder when the desktop provides it. Missing media can be matched from a selected source folder or relinked one clip at a time, with filename/size/duration checks.
+- The NVENC probe now uses a 256×256 test frame. Older builds used 16×16, which NVIDIA correctly rejects as below the minimum encoder frame size and incorrectly forced CPU fallback.
 - The app checks `nvidia-smi` separately from FFmpeg, reports the GPU model/driver, and tries PATH/system FFmpeg when the bundled binary cannot use NVENC.
 - The header distinguishes `h264_nvenc active`, `GPU found · CPU fallback`, and `CPU encoder` instead of hiding a failed GPU probe.
-- The workflow artifact points to the actual `RanCut-0.4.3-Setup.exe` filename.
+- The workflow artifact points to the actual `RanCut-0.4.4-Setup.exe` filename.
 - FFmpeg probes hardware encoders at startup. If a working NVIDIA NVENC, AMD AMF, Intel Quick Sync or Apple VideoToolbox encoder is available, export uses it automatically. Otherwise it uses `libx264`. A failed or unavailable hardware encoder safely falls back to CPU mode.
 - The header and export dialog show the active encoder (`h264_nvenc active` or `CPU encoder`).
 - The source archive contains no prebuilt executable, `node_modules`, or installer helper scripts. Build the installer on a clean Windows runner.
@@ -27,7 +28,7 @@ npm run build
 npm run dist:win
 ```
 
-`npm run dist:win` creates `release/RanCut-0.4.3-Setup.exe` and never publishes a GitHub release. The included GitHub Actions workflow runs the tests and uploads the installer and web build as separate artifacts. Do not rerun an old failed workflow attempt; run the workflow from the current `main` commit.
+`npm run dist:win` creates `release/RanCut-0.4.4-Setup.exe` and never publishes a GitHub release. The included GitHub Actions workflow runs the tests and uploads the installer and web build as separate artifacts. Do not rerun an old failed workflow attempt; run the workflow from the current `main` commit.
 
 ## GPU behaviour
 
