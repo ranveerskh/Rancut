@@ -63,6 +63,7 @@ export class Renderer{
   }finally{this.drawing=false;}
  }
  captureRGBA(){const size=this.canvas.width*this.canvas.height*4;if(this.frameBytes?.length!==size)this.frameBytes=new Uint8Array(size);this.gl.readPixels(0,0,this.canvas.width,this.canvas.height,this.gl.RGBA,this.gl.UNSIGNED_BYTE,this.frameBytes);if(this.gl.getError()!==this.gl.NO_ERROR)throw Error('GPU frame read failed. Try a smaller export resolution.');return this.frameBytes;}
+ captureJPEG(quality=.96){return new Promise((resolve,reject)=>this.canvas.toBlob(blob=>blob?resolve(blob):reject(Error('Could not compress the export frame.')),'image/jpeg',quality));}
  sample(clip){const e=this.pool.get('v:'+clip.trackId);if(!e||e.clip!==clip.id||e.el.readyState<2)return null;const c=document.createElement('canvas');c.width=640;c.height=Math.round(640*e.el.videoHeight/e.el.videoWidth);c.getContext('2d').drawImage(e.el,0,0,c.width,c.height);return c;}
  dispose(){this.disposed=true;this.pause();for(const e of this.pool.values()){e.el.removeAttribute('src');e.el.load();e.node?.disconnect();e.gain?.disconnect();}this.audio?.ctx.close();this.pool.clear();const g=this.gl;for(const x of this.targets){g.deleteTexture(x.tex);g.deleteFramebuffer(x.fbo);}g.deleteTexture(this.texture);g.deleteProgram(this.program);g.deleteBuffer(this.buffer);}
 }
