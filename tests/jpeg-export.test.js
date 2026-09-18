@@ -20,8 +20,11 @@ test('JPEG frame export accepts compressed browser frames', {skip:!binary||!exis
   try{
     const jpg=spawnSync(binary,['-v','error','-f','lavfi','-i','color=c=red:s=64x64','-frames:v','1','-f','image2pipe','-c:v','mjpeg','pipe:1']);
     assert.equal(jpg.status,0,jpg.stderr.toString());
-    const job=await post('export',{width:64,height:64,fps:30,frames:2,frameFormat:'jpeg',quality:'High',audio:[]});
-    await post(`export/${job.id}/frame?index=0`,jpg.stdout,true);await post(`export/${job.id}/frame?index=1`,jpg.stdout,true);await post(`export/${job.id}/finish`,{});
+    const job=await post('export',{width:64,height:64,fps:30,frames:6,frameFormat:'jpeg',quality:'High',audio:[]});
+    await post(`export/${job.id}/frame?index=0`,jpg.stdout,true);await post(`export/${job.id}/frame?index=1`,jpg.stdout,true);
+    const packet=Buffer.concat(Array.from({length:4},()=>{const header=Buffer.alloc(4);header.writeUInt32BE(jpg.stdout.length);return Buffer.concat([header,jpg.stdout]);}));
+    const batch=await post(`export/${job.id}/frame-batch?start=2&count=4`,packet,true);assert.equal(batch.received,6);
+    await post(`export/${job.id}/finish`,{});
     let state;for(let i=0;i<100;i++){state=await (await fetch(base+`export/${job.id}/status`)).json();if(['complete','failed'].includes(state.state))break;await new Promise(r=>setTimeout(r,50));}
     assert.equal(state.state,'complete',state.error);assert((await stat(state.savedPath)).size>500);
   }finally{await new Promise(r=>server.close(r));await api.cleanup();await rm(temp,{recursive:true,force:true});}

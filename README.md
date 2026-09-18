@@ -1,8 +1,16 @@
-# RanCut 0.4.4 — RTX/NVENC probe fix
+# RanCut 0.4.5 — hybrid-GPU export fix
 
 RanCut is a local video editor for YouTube creators. It runs locally; no account or cloud upload is required for editing.
 
-## What changed in 0.4.4
+## What changed in 0.4.5
+
+- Electron requests the high-performance GPU before its graphics process starts. On hybrid AMD/NVIDIA laptops this asks Windows/Chromium to put the WebGL canvas on the discrete GPU instead of silently leaving effects rendering on the integrated Radeon GPU.
+- The header now reports both jobs separately: the active H.264 encoder and the actual WebGL canvas renderer. Hover it to see the complete detected GPU strings.
+- Export sends four length-prefixed JPEG frames per local request and overlaps encoding of the previous batch with rendering of the next batch. This removes most of the per-frame request overhead without buffering the whole project in RAM.
+- The export dialog reports average render, JPEG-compression, and send/encode time per frame. This makes the remaining bottleneck measurable on the target Windows PC.
+- Intermediate JPEG quality now follows Good/High/Maximum instead of always using the most expensive setting.
+
+## Carried forward from 0.4.4
 
 - Installer workflow builds the NSIS installer without attempting a GitHub release or requiring `GH_TOKEN`.
 - Export frames are sent as high-quality JPEG instead of uncompressed RGBA, cutting the local 4K transfer bottleneck while keeping the final H.264 quality setting.
@@ -10,7 +18,7 @@ RanCut is a local video editor for YouTube creators. It runs locally; no account
 - The NVENC probe now uses a 256×256 test frame. Older builds used 16×16, which NVIDIA correctly rejects as below the minimum encoder frame size and incorrectly forced CPU fallback.
 - The app checks `nvidia-smi` separately from FFmpeg, reports the GPU model/driver, and tries PATH/system FFmpeg when the bundled binary cannot use NVENC.
 - The header distinguishes `h264_nvenc active`, `GPU found · CPU fallback`, and `CPU encoder` instead of hiding a failed GPU probe.
-- The workflow artifact points to the actual `RanCut-0.4.4-Setup.exe` filename.
+- The workflow artifact points to the actual `RanCut-0.4.5-Setup.exe` filename.
 - FFmpeg probes hardware encoders at startup. If a working NVIDIA NVENC, AMD AMF, Intel Quick Sync or Apple VideoToolbox encoder is available, export uses it automatically. Otherwise it uses `libx264`. A failed or unavailable hardware encoder safely falls back to CPU mode.
 - The header and export dialog show the active encoder (`h264_nvenc active` or `CPU encoder`).
 - The source archive contains no prebuilt executable, `node_modules`, or installer helper scripts. Build the installer on a clean Windows runner.
@@ -28,11 +36,11 @@ npm run build
 npm run dist:win
 ```
 
-`npm run dist:win` creates `release/RanCut-0.4.4-Setup.exe` and never publishes a GitHub release. The included GitHub Actions workflow runs the tests and uploads the installer and web build as separate artifacts. Do not rerun an old failed workflow attempt; run the workflow from the current `main` commit.
+`npm run dist:win` creates `release/RanCut-0.4.5-Setup.exe` and never publishes a GitHub release. The included GitHub Actions workflow runs the tests and uploads the installer and web build as separate artifacts. Do not rerun an old failed workflow attempt; run the workflow from the current `main` commit.
 
 ## GPU behaviour
 
-The app does not require an RTX card. It tests the FFmpeg encoders that are actually usable on the machine. RTX systems with a working NVIDIA driver normally show `h264_nvenc active`; systems without it use CPU encoding. Preview compositing already uses WebGL when the browser/Electron GPU is available. This is acceleration, not a guarantee of realtime 4K playback: source codec, effects, storage and driver state still matter.
+The app does not require an RTX card. It tests the FFmpeg encoders that are actually usable on the machine. RTX systems with a working NVIDIA driver normally show `h264_nvenc`; systems without it use CPU encoding. The canvas label separately shows NVIDIA, AMD or Intel. Electron requests the high-performance GPU, but Windows Graphics Settings and the driver retain final control. This update reduces transfer overhead; it does not promise realtime 4K export because source-frame seeking and JPEG compression may still dominate. Use the new per-frame timings to identify that case.
 
 ## Safety and distribution
 
@@ -46,4 +54,4 @@ The timeline supports linked A/V ripple editing, automatic playhead following, b
 
 ## Validation
 
-36 automated tests pass with FFmpeg, including real MP4 export, JPEG-frame export, raw-frame orientation, output-folder retention, cancellation cleanup, Style/transition data and timeline operations. Production web build passes. Browser interaction, Windows installer execution, Defender scanning, Windows NVENC availability and long 4K workloads must still be checked on Windows.
+36 automated tests pass with FFmpeg, including real MP4 export, legacy single-JPEG input, batched JPEG input, raw-frame orientation, output-folder retention, cancellation cleanup, Style/transition data and timeline operations. Production web build passes. Browser interaction, Windows installer execution, Defender scanning, actual discrete-GPU assignment and long 4K workloads must still be checked on Windows.

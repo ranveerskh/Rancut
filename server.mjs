@@ -31,7 +31,7 @@ export async function createApi({ffmpeg,exportDir,settingsPath}={}){
    const u=new URL(req.url,`http://${host}`),parts=u.pathname.split('/').filter(Boolean);
    if(req.method==='GET'&&parts[1]==='output')return json(res,200,{directory:output.get()});
    if(req.method==='POST'&&parts[1]==='output'){const cfg=JSON.parse(await body(req));if([...jobs.values()].some(j=>['frames','finishing'].includes(j.state)))throw Error('Wait for the current export before changing folder.');return json(res,200,{directory:await output.set(cfg.directory)});}
-   if(req.method==='GET'&&parts[1]==='health')return json(res,200,{ffmpeg:!!ffmpeg,version:'0.4.4',encoder:encoderInfo.selected,hardwareEncoders:encoderInfo.hardware,encoderMode:encoderInfo.mode,gpu:encoderInfo.gpu,ffmpegSource:encoderInfo.ffmpegSource});
+   if(req.method==='GET'&&parts[1]==='health')return json(res,200,{ffmpeg:!!ffmpeg,version:'0.4.5',encoder:encoderInfo.selected,hardwareEncoders:encoderInfo.hardware,encoderMode:encoderInfo.mode,gpu:encoderInfo.gpu,ffmpegSource:encoderInfo.ffmpegSource});
    if(req.method==='POST'&&parts[1]==='media'){
     const id=randomUUID(),dest=path.join(root,id+'.media');let size=0;const stream=createWriteStream(dest);
     try{req.on('data',b=>{size+=b.length;if(size>MAX_FILE)req.destroy(Error('File exceeds 50 GB.'));});await pipeline(req,stream);}catch(e){await rm(dest,{force:true});throw e;}
@@ -52,6 +52,18 @@ export async function createApi({ffmpeg,exportDir,settingsPath}={}){
     const j={id,dir,cfg,silent,proc,outputDirectory,finalPath:path.join(outputDirectory,fileName),partialPath:path.join(outputDirectory,'.'+fileName+'.partial.mp4'),state:'frames',received:0,busy:false,error:null};jobs.set(id,j);proc.done.catch(e=>{if(j.state!=='cancelled'){j.state='failed';j.error=e.message;}});return json(res,200,{id});
    }
    const j=jobs.get(parts[2]);if(parts[1]==='export'&&!j)throw Error('Export not found.');
+   if(req.method==='POST'&&parts[3]==='frame-batch'){
+    const startIndex=Number(u.searchParams.get('start')),count=Number(u.searchParams.get('count'));
+    if(j.state!=='frames'||j.busy||!Number.isInteger(startIndex)||startIndex!==j.received||!Number.isInteger(count)||count<1||count>8||j.received+count>j.cfg.frames)throw Error('Unexpected frame batch.');j.busy=true;
+    try{
+     if(j.cfg.frameFormat!=='jpeg')throw Error('Frame batching requires JPEG export.');
+     const packet=await body(req,count*24*1024**2+count*4);let offset=0;const frames=[];
+     for(let i=0;i<count;i++){if(offset+4>packet.length)throw Error('Invalid frame batch.');const size=packet.readUInt32BE(offset);offset+=4;if(size<4||size>24*1024**2||offset+size>packet.length)throw Error('Invalid frame batch.');const frame=packet.subarray(offset,offset+size);offset+=size;if(frame[0]!==0xff||frame[1]!==0xd8)throw Error('Invalid JPEG frame.');frames.push(frame);}
+     if(offset!==packet.length)throw Error('Invalid frame batch.');if(j.proc.stdin.destroyed)throw Error('Encoder stopped.');
+     for(const frame of frames)if(!j.proc.stdin.write(frame))await Promise.race([once(j.proc.stdin,'drain'),j.proc.done.then(()=>{throw Error('Encoder stopped.');})]);
+     j.received+=frames.length;return json(res,200,{received:j.received});
+    }finally{j.busy=false;}
+   }
    if(req.method==='POST'&&parts[3]==='frame'){
     if(j.state!=='frames'||j.busy||Number(u.searchParams.get('index'))!==j.received||j.received>=j.cfg.frames)throw Error('Unexpected frame order.');j.busy=true;
     try{const raw=j.cfg.frameFormat==='rgba',jpeg=j.cfg.frameFormat==='jpeg',frame=await body(req,raw?j.cfg.width*j.cfg.height*4:jpeg?24*1024**2:48*1024**2);const valid=raw?frame.length===j.cfg.width*j.cfg.height*4:jpeg?(frame.length>3&&frame[0]===0xff&&frame[1]===0xd8):(frame.length>=24&&frame.subarray(0,8).toString('hex')==='89504e470d0a1a0a'&&frame.readUInt32BE(16)===j.cfg.width&&frame.readUInt32BE(20)===j.cfg.height);if(!valid)throw Error('Invalid frame size.');if(j.proc.stdin.destroyed)throw Error('Encoder stopped.');if(!j.proc.stdin.write(frame))await Promise.race([once(j.proc.stdin,'drain'),j.proc.done.then(()=>{throw Error('Encoder stopped.');})]);j.received++;return json(res,200,{received:j.received});}finally{j.busy=false;}
@@ -68,7 +80,7 @@ export async function createApi({ffmpeg,exportDir,settingsPath}={}){
    }
    if(req.method==='GET'&&parts[3]==='status')return json(res,200,{state:j.state,error:j.error,received:j.received,savedPath:j.state==='complete'?j.finalPath:null,outputDirectory:j.outputDirectory});
    if(req.method==='GET'&&parts[3]==='download'){
-    if(j.state!=='complete')throw Error('Export is not ready.');res.setHeader('Content-Type','video/mp4');res.setHeader('Content-Disposition','attachment; filename="RanCut-v0.4.4.mp4"');res.setHeader('Content-Length',(await stat(j.output)).size);await pipeline(createReadStream(j.output),res);return;
+    if(j.state!=='complete')throw Error('Export is not ready.');res.setHeader('Content-Type','video/mp4');res.setHeader('Content-Disposition','attachment; filename="RanCut-v0.4.5.mp4"');res.setHeader('Content-Length',(await stat(j.output)).size);await pipeline(createReadStream(j.output),res);return;
    }
    return next();
   }catch(e){if(!res.headersSent)json(res,422,{error:e.message||'Local processing failed.'});else res.destroy();}

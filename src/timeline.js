@@ -1,7 +1,7 @@
 import {validPose} from './scene-core.js';
 import {validateTransition} from './creator.js';
 import {soundBytes} from './sounds.js';
-export const VERSION='0.4.4';
+export const VERSION='0.4.5';
 export const uid=(p='c')=>`${p}_${crypto.randomUUID()}`;
 export const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 export const end=c=>c.start+c.duration;

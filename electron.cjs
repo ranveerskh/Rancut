@@ -1,5 +1,10 @@
 const {app,BrowserWindow,dialog,ipcMain,shell}=require('electron');
 const http=require('node:http');const path=require('node:path');const fs=require('node:fs');const {pathToFileURL}=require('node:url');
+// Hybrid-GPU laptops otherwise commonly put Chromium/WebGL on the integrated GPU.
+// NVENC selection is separate, so explicitly request the high-performance GPU
+// before Electron creates its GPU process.
+app.commandLine.appendSwitch('force_high_performance_gpu');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
 let server,api,window,allowClose=false,waiting=false,closing=false,closeTimer;
 const finishClose=()=>{clearTimeout(closeTimer);allowClose=true;window?.destroy();};
 if(!app.requestSingleInstanceLock()){app.quit();}else{
