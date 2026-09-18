@@ -1,14 +1,18 @@
+import {motionAt} from './scene-core.js';
+import {transitionEvents,withTransitionAudio} from './creator.js';
+import {soundRuntime} from './sounds.js';
+import {compositePass} from './composite-shader.js';
 import {envelope,fadeDuration} from './editing.js';
 import {activeAt,fxDefault,clamp} from './timeline.js';
-const vertex=`attribute vec2 pos;varying vec2 v;void main(){v=pos*.5+.5;gl_Position=vec4(pos,0.,1.);}`;
-const fragment=`precision highp float;varying vec2 v;uniform sampler2D tex;uniform int mode;uniform vec2 fit;uniform vec2 offset;uniform float scale;uniform float opacity;uniform vec2 pixel;uniform float blur;
+export const vertex=`attribute vec2 pos;varying vec2 v;void main(){v=pos*.5+.5;gl_Position=vec4(pos,0.,1.);}`;
+export const fragment=`precision highp float;varying vec2 v;uniform sampler2D tex;uniform int mode;uniform vec2 fit;uniform vec2 offset;uniform float scale;uniform float opacity;uniform vec2 pixel;uniform float blur;
 uniform bool keyOn;uniform bool matte;uniform vec3 key;uniform float threshold;uniform float softness;uniform float choke;uniform float feather;uniform float spill;uniform float decontam;
-uniform float exposure;uniform float contrast;uniform float saturation;uniform float temp;uniform float tint;
+uniform float exposure;uniform float contrast;uniform float saturation;uniform float temp;uniform float tint;uniform int transKind;uniform float transProgress;
 vec3 grade(vec3 c){c*=pow(2.,exposure);c=(c-.5)*(1.+contrast)+.5;float l=dot(c,vec3(.2126,.7152,.0722));c=mix(vec3(l),c,saturation);c+=vec3(temp*.06-tint*.018,tint*.035,-temp*.06-tint*.018);return clamp(c,0.,1.);}
 float rawAlpha(vec2 uv){vec4 c=texture2D(tex,uv);float excess=(c.g-max(c.r,c.b))/max(c.g,.035);float t=clamp((excess-threshold)/max(softness,.02),0.,1.);return (1.-t*t*(3.-2.*t))*c.a;}
 float cleanAlpha(vec2 uv){float a=rawAlpha(uv),lo=a;for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++)lo=min(lo,rawAlpha(uv+pixel*vec2(float(x),float(y))));return mix(a,lo,choke);}
 void main(){
- if(mode>0){vec4 c=texture2D(tex,v);vec3 rgb=c.a>.0001?c.rgb/c.a:vec3(0.);if(mode==1){gl_FragColor=vec4(grade(rgb)*c.a,c.a);}else gl_FragColor=vec4(rgb,c.a);return;}
+ ${compositePass}
  vec2 uv=(v-.5-offset)/(fit*scale)+.5;if(any(lessThan(uv,vec2(0.)))||any(greaterThan(uv,vec2(1.)))){gl_FragColor=vec4(0.);return;}
  vec4 c=texture2D(tex,uv);if(blur>.01){vec2 d=pixel*blur;c=c*.4+(texture2D(tex,uv+vec2(d.x,0.))+texture2D(tex,uv-vec2(d.x,0.))+texture2D(tex,uv+vec2(0.,d.y))+texture2D(tex,uv-vec2(0.,d.y)))*.15;}
  float a=c.a;vec3 rgb=c.rgb;
@@ -44,19 +48,21 @@ export class Renderer{
  async draw(p,media,t,{play=false,width=1280,exact=false}={}){
   if(this.disposed)return false;if(this.drawing&&!exact)return false;this.drawing=true;
   try{
+   const transition=transitionEvents(p).find(v=>t>=v.start&&t<v.start+v.duration);p=withTransitionAudio(p);
    const active=activeAt(p,t),sources=new Map(),visible=p.tracks.filter(x=>x.type!=='audio'&&!x.hidden).slice().reverse();
    const used=new Set();
-   for(const c of active){const tr=p.tracks.find(x=>x.id===c.trackId);if(!tr)continue;const a=tr.type==='audio';if(a?tr.muted:tr.hidden)continue;if(c.kind==='adjustment')continue;used.add((a?'a:':'v:')+c.trackId);const m=media.find(m=>m.id===c.mediaId);sources.set(c.id,await this.source(c,m,t,play,a));}
-   for(const [k,e] of this.pool)if(!used.has(k))e.el.pause();
+   for(const c of active){const tr=p.tracks.find(x=>x.id===c.trackId);if(!tr)continue;const a=tr.type==='audio';if(exact&&a)continue;if(a?tr.muted:tr.hidden)continue;if(c.kind==='adjustment')continue;used.add((a?'a:':'v:')+c.trackId);const meta=p.media.find(m=>m.id===c.mediaId),m=meta?.sound?soundRuntime(meta):media.find(m=>m.id===c.mediaId);sources.set(c.id,await this.source(c,m,t,play,a));}
+   for(const [k,e] of this.pool)if(!used.has(k)){e.el.pause();if(k.startsWith('a:soundtrack_')){e.el.removeAttribute('src');e.el.load();e.node?.disconnect();e.gain?.disconnect();this.pool.delete(k);}}
    const w=Math.round(width/2)*2,h=Math.round((w*p.height/p.width)/2)*2;this.resize(w,h);const g=this.gl;g.viewport(0,0,w,h);g.useProgram(this.program);g.activeTexture(g.TEXTURE0);let target=0;g.bindFramebuffer(g.FRAMEBUFFER,this.targets[target].fbo);g.clearColor(0,0,0,0);g.clear(g.COLOR_BUFFER_BIT);
-   for(const tr of visible){const c=active.find(c=>c.trackId===tr.id);if(!c)continue;this.uniforms(c.fx);
+   for(const tr of visible){const c=active.find(c=>c.trackId===tr.id);if(!c)continue;this.uniforms(c.kind==='adjustment'?{...c.fx,transform:motionAt(c,t)}:c.fx);
     if(c.kind==='adjustment'){const next=1-target;g.disable(g.BLEND);g.bindFramebuffer(g.FRAMEBUFFER,this.targets[next].fbo);g.bindTexture(g.TEXTURE_2D,this.targets[target].tex);this.i('mode',1);g.drawArrays(g.TRIANGLES,0,6);target=next;continue;}
     const src=sources.get(c.id);if(!src)continue;const sw=src.videoWidth||src.naturalWidth,sh=src.videoHeight||src.naturalHeight;if(!sw||!sh)continue;
     g.bindFramebuffer(g.FRAMEBUFFER,this.targets[target].fbo);g.enable(g.BLEND);g.blendFuncSeparate(g.SRC_ALPHA,g.ONE_MINUS_SRC_ALPHA,g.ONE,g.ONE_MINUS_SRC_ALPHA);g.bindTexture(g.TEXTURE_2D,this.texture);g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL,true);g.texImage2D(g.TEXTURE_2D,0,g.RGBA,g.RGBA,g.UNSIGNED_BYTE,src);this.i('mode',0);const aspect=sw/sh,project=p.width/p.height;this.v2('fit',aspect>project?1:aspect/project,aspect>project?project/aspect:1);this.v2('pixel',1/sw,1/sh);g.drawArrays(g.TRIANGLES,0,6);
    }
-   g.bindFramebuffer(g.FRAMEBUFFER,null);g.disable(g.BLEND);g.bindTexture(g.TEXTURE_2D,this.targets[target].tex);this.i('mode',2);g.drawArrays(g.TRIANGLES,0,6);return true;
+   g.bindFramebuffer(g.FRAMEBUFFER,null);g.disable(g.BLEND);g.bindTexture(g.TEXTURE_2D,this.targets[target].tex);this.i('mode',transition?3:2);this.i('transKind',transition?({paper:1,whoosh:2,shutter:3,glitch:4,fade:5}[transition.kind]):0);this.f('transProgress',transition?(t-transition.start)/transition.duration:0);g.drawArrays(g.TRIANGLES,0,6);return true;
   }finally{this.drawing=false;}
  }
+ captureRGBA(){const size=this.canvas.width*this.canvas.height*4;if(this.frameBytes?.length!==size)this.frameBytes=new Uint8Array(size);this.gl.readPixels(0,0,this.canvas.width,this.canvas.height,this.gl.RGBA,this.gl.UNSIGNED_BYTE,this.frameBytes);if(this.gl.getError()!==this.gl.NO_ERROR)throw Error('GPU frame read failed. Try a smaller export resolution.');return this.frameBytes;}
  sample(clip){const e=this.pool.get('v:'+clip.trackId);if(!e||e.clip!==clip.id||e.el.readyState<2)return null;const c=document.createElement('canvas');c.width=640;c.height=Math.round(640*e.el.videoHeight/e.el.videoWidth);c.getContext('2d').drawImage(e.el,0,0,c.width,c.height);return c;}
  dispose(){this.disposed=true;this.pause();for(const e of this.pool.values()){e.el.removeAttribute('src');e.el.load();e.node?.disconnect();e.gain?.disconnect();}this.audio?.ctx.close();this.pool.clear();const g=this.gl;for(const x of this.targets){g.deleteTexture(x.tex);g.deleteFramebuffer(x.fbo);}g.deleteTexture(this.texture);g.deleteProgram(this.program);g.deleteBuffer(this.buffer);}
 }

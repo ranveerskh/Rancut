@@ -7,7 +7,7 @@ if errorlevel 1 (
  pause
  exit /b 1
 )
-if not exist node_modules\.rancut-v038-ready (
+if not exist node_modules\.rancut-v040-ready (
  echo Installing RanCut dependencies. Internet is needed on the first run.
  call npm.cmd ci --no-audit --no-fund
  if errorlevel 1 (
@@ -15,7 +15,7 @@ if not exist node_modules\.rancut-v038-ready (
   pause
   exit /b 1
  )
- echo ready>node_modules\.rancut-v038-ready
+ echo ready>node_modules\.rancut-v040-ready
 )
 echo RanCut opens at http://127.0.0.1:5173
 echo Keep this window open while editing.

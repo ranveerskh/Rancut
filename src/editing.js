@@ -3,6 +3,12 @@ import * as T from './timeline.js';
 export function expandedIds(p, ids) {
   return new Set(ids.flatMap(id => T.pair(p, id)));
 }
+export function selectFrom(p,id,all=true){
+ const anchor=p.clips.find(c=>c.id===id);if(!anchor)throw Error('Select the starting clip first.');
+ return p.clips.filter(c=>c.start>=anchor.start-T.EPS&&(all||c.trackId===anchor.trackId)&&pairUnlocked(c)).map(c=>c.id);
+ function pairUnlocked(c){return pairTracks(c).every(t=>t&&!t.locked);}
+ function pairTracks(c){return [...expandedIds(p,[c.id])].map(id=>p.tracks.find(t=>t.id===p.clips.find(x=>x.id===id)?.trackId));}
+}
 export function moveGroup(p, ids, anchorId, targetTrack, start) {
   const group=expandedIds(p,ids), anchor=p.clips.find(c=>c.id===anchorId);
   if(!anchor||!group.size)return p;

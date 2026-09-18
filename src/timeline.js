@@ -1,4 +1,7 @@
-export const VERSION='0.3.8';
+import {validPose} from './scene-core.js';
+import {validateTransition} from './creator.js';
+import {soundBytes} from './sounds.js';
+export const VERSION='0.4.0';
 export const uid=(p='c')=>`${p}_${crypto.randomUUID()}`;
 export const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 export const end=c=>c.start+c.duration;
@@ -13,9 +16,12 @@ export function mergeRanges(ranges){const out=[];for(const [a,b] of ranges.filte
 export function validate(p){
  if(p.schema!==1||!Array.isArray(p.clips)||!Array.isArray(p.tracks)||!Array.isArray(p.media)||!Array.isArray(p.markers))throw Error('Invalid project file.');
  if(![24,25,30,50,60].includes(p.fps)||![p.width,p.height].every(n=>Number.isInteger(n)&&n>=64&&n<=7680))throw Error('Invalid project format.');
+ for(const m of p.media)if(m.sound)soundBytes(m.sound);
  const ts=track(p),ids=new Set(),ms=new Map(p.media.map(m=>[m.id,m]));if(ts.size!==p.tracks.length)throw Error('Duplicate track IDs.');
  for(const t of p.tracks)if(!['video','audio','adjustment'].includes(t.type))throw Error('Invalid track type.');
  for(const c of p.clips){
+  if(c.transition)validateTransition(c.transition);
+  if(c.fx?.scene){const m=c.fx.scene;if(!validPose(m.from)||!validPose(m.to)||!Number.isFinite(m.span)||m.span<=0||!Number.isFinite(m.offset)||m.offset<0)throw Error('Invalid Style motion.');}
   if(ids.has(c.id))throw Error('Duplicate clip IDs.');ids.add(c.id);
   if(!ts.has(c.trackId)||![c.start,c.duration,c.sourceIn].every(Number.isFinite)||c.start<0||c.duration<1/p.fps-EPS||c.sourceIn<0)throw Error('Invalid clip timing.');
   const m=ms.get(c.mediaId),t=ts.get(c.trackId);
@@ -30,7 +36,7 @@ export function validate(p){
 export function assertLocks(before,after){const ts=track(before);for(const c of before.clips)if(ts.get(c.trackId)?.locked){const n=after.clips.find(x=>x.id===c.id);if(JSON.stringify(c)!==JSON.stringify(n))throw Error(`Unlock ${c.trackId} first. Linked edits are all-or-nothing.`);}for(const c of after.clips)if(ts.get(c.trackId)?.locked&&!before.clips.some(x=>x.id===c.id))throw Error(`Track ${c.trackId} is locked.`);return after;}
 export function finish(before,after){assertLocks(before,after);return validate(after);}
 export function pair(p,id){const c=p.clips.find(c=>c.id===id);return c?[c.id,c.linkedId].filter(Boolean):[];}
-function piece(c,a,b,start,p){const image=p.media.find(m=>m.id===c.mediaId)?.type==='image'||c.kind==='adjustment';return {...structuredClone(c),id:uid(),start,duration:b-a,sourceIn:image?0:c.sourceIn+a-c.start,linkedId:null,_old:c.id,_a:a,_b:b};}
+function piece(c,a,b,start,p){const image=p.media.find(m=>m.id===c.mediaId)?.type==='image'||c.kind==='adjustment';const copied=structuredClone(c);if(a>c.start+EPS)delete copied.transition;if(copied.fx?.scene)copied.fx.scene.offset+=(a-c.start);return {...copied,id:uid(),start,duration:b-a,sourceIn:image?0:c.sourceIn+a-c.start,linkedId:null,_old:c.id,_a:a,_b:b};}
 function relink(p,clips){const original=new Map(p.clips.map(c=>[c.id,c]));for(const c of clips){const old=original.get(c._old);if(old?.linkedId){const other=clips.find(x=>x._old===old.linkedId&&Math.abs(x._a-c._a)<EPS&&Math.abs(x._b-c._b)<EPS);c.linkedId=other?.id||null;}}return clips.map(({_old,_a,_b,...c})=>c);}
 export function mapTime(t,ranges){return t-ranges.reduce((sum,[a,b])=>sum+Math.max(0,Math.min(t,b)-a),0);}
 export function removeRanges(p,raw,{ripple=true,ids=null}={}){
@@ -69,5 +75,5 @@ export function resizeClip(p,id,edge,time,ripple){
  }
  return finish(p,{...p,clips:relink(p,clips),markers:ripple?p.markers.map(m=>({...m,time:m.time>=oldEnd?m.time+delta:m.time})):p.markers});
 }
-export function addTrack(p,type){const prefix=type==='audio'?'A':type==='adjustment'?'ADJ':'V';const nums=p.tracks.filter(t=>t.id.startsWith(prefix)).map(t=>Number(t.id.slice(prefix.length))||0);const t={id:prefix+(Math.max(0,...nums)+1),type,hidden:false,muted:false,locked:false};return {...p,tracks:type==='audio'?[...p.tracks,t]:[t,...p.tracks]};}
+export function addTrack(p,type){const prefix=type==='audio'?'A':type==='adjustment'?'ADJ':'V';const nums=p.tracks.filter(t=>t.id.startsWith(prefix)).map(t=>Number(t.id.slice(prefix.length))||0);const t={id:prefix+(Math.max(0,...nums)+1),type,hidden:false,muted:false,locked:false};return {...p,tracks:type==='audio'?[...p.tracks,t]:type==='video'?[...p.tracks.filter(x=>x.creatorStyle),t,...p.tracks.filter(x=>!x.creatorStyle)]:[t,...p.tracks]};}
 export function addMediaClip(p,mediaId,trackId,start){const m=p.media.find(m=>m.id===mediaId);if(!m)throw Error('Media not found.');const t=track(p).get(trackId);if(!t)throw Error('Track not found.');const c={id:uid(),mediaId,trackId,name:m.name,start:quant(Math.max(0,start),p.fps),duration:Math.max(1/p.fps,Math.floor(m.duration*p.fps)/p.fps),sourceIn:0,fx:fxDefault(),linkedId:null};let after={...p,clips:[...p.clips,c]};if(m.type==='video'&&t.type==='video'&&m.hasAudio!==false){let a=p.tracks.find(t=>t.type==='audio'&&!t.locked&&!p.clips.some(x=>x.trackId===t.id&&x.start<end(c)-EPS&&end(x)>c.start+EPS));if(!a){after=addTrack(after,'audio');a=after.tracks.at(-1);}const audio={...structuredClone(c),id:uid(),trackId:a.id,linkedId:c.id};c.linkedId=audio.id;after.clips.push(audio);}return finish(p,after);}

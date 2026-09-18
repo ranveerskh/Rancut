@@ -4,10 +4,13 @@ import {createServer} from 'node:http';
 import {createRequire} from 'node:module';
 import {existsSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
+import {mkdtemp,rm,stat} from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import {createApi} from '../server.mjs';
 const require=createRequire(import.meta.url),binary=process.env.RANCUT_FFMPEG||require('ffmpeg-static');
 test('actual MP4 export accepts fades and encodes mixed audio', {skip:!binary||!existsSync(binary)},async()=>{
- const api=await createApi({ffmpeg:binary}),server=createServer(api.middleware);await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}/api/`;
+ const temp=await mkdtemp(path.join(os.tmpdir(),'rancut-test-'));const api=await createApi({ffmpeg:binary,exportDir:path.join(temp,'exports'),settingsPath:path.join(temp,'settings.json')}),server=createServer(api.middleware);await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}/api/`;
  const post=async(path,data,binaryData=false)=>{const r=await fetch(base+path,{method:'POST',headers:{'X-RanCut':'1','Content-Type':binaryData?'application/octet-stream':'application/json'},body:binaryData?data:JSON.stringify(data)});const j=await r.json();assert.equal(r.status,200,JSON.stringify(j));return j;};
  try{
  const wav=spawnSync(binary,['-v','error','-f','lavfi','-i','sine=frequency=1000:duration=1','-f','wav','pipe:1']);assert.equal(wav.status,0);
@@ -16,7 +19,7 @@ test('actual MP4 export accepts fades and encodes mixed audio', {skip:!binary||!
  for(let i=0;i<6;i++)await post(`export/${job.id}/frame?index=${i}`,png.stdout,true);
  await post(`export/${job.id}/finish`,{});let result;
  for(let i=0;i<100;i++){result=await(await fetch(base+`export/${job.id}/status`)).json();if(['complete','failed'].includes(result.state))break;await new Promise(r=>setTimeout(r,50));}
- assert.equal(result.state,'complete',result.error);const output=await fetch(base+`export/${job.id}/download`);assert.equal(output.headers.get('content-type'),'video/mp4');const bytes=Buffer.from(await output.arrayBuffer());assert(bytes.length>1000);
+ assert.equal(result.state,'complete',result.error);assert((await stat(result.savedPath)).size>1000);const output=await fetch(base+`export/${job.id}/download`);assert.equal(output.headers.get('content-type'),'video/mp4');const bytes=Buffer.from(await output.arrayBuffer());assert(bytes.length>1000);
  const decoded=spawnSync(binary,['-v','error','-i','pipe:0','-map','0:a:0','-f','f32le','pipe:1'],{input:bytes});assert.equal(decoded.status,0,decoded.stderr.toString());assert(decoded.stdout.length>0);
- }finally{await new Promise(r=>server.close(r));await api.cleanup();}
+ }finally{await new Promise(r=>server.close(r));await api.cleanup();await rm(temp,{recursive:true,force:true});}
 });

@@ -1,0 +1,47 @@
+import React,{useEffect,useRef,useState} from 'react';
+import * as C from './creator.js';
+import {importSound} from './sounds.js';
+const stamp=t=>`${Math.floor(t/60)}:${(t%60).toFixed(2).padStart(5,'0')}`;
+function download(value,name){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name.replace(/[^a-zA-Z0-9_-]/g,'_')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function saved(key){try{const values=JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(values))return [];return values.flatMap(v=>{try{return [key.includes('styles')?C.validateStyle(v):C.validateTransition(v)];}catch{return [];}});}catch{return [];}}
+export function StyleClipControls({clip,changeFx,commit}){
+ const m=clip.fx.scene;
+ return <div className="creatorCard"><b>Scene motion · person + background</b>{['from','to'].map(edge=><fieldset key={edge}><legend>{edge==='from'?'Start':'End'} framing</legend>{['scale','x','y'].map(k=><label key={k}>{k}<input aria-label={`${edge} scene ${k}`} type="number" min={k==='scale'?100:-30} max={k==='scale'?180:30} value={m[edge][k]} onChange={e=>changeFx(clip.id,'scene',edge,{...m[edge],[k]:+e.target.value})}/></label>)}</fieldset>)}<label><input type="checkbox" checked={!!clip.styleLocked} onChange={e=>commit(p=>({...p,clips:p.clips.map(c=>c.id===clip.id?{...c,styleLocked:e.target.checked}:c)}),'Style segment lock updated')}/> Keep this framing on regenerate</label></div>;
+}
+export default function CreatorPanel({project,clip,commit,fail,seek}){
+ const videos=project.tracks.filter(t=>t.type==='video');
+ const [track,setTrack]=useState(project.creatorSource||videos[0]?.id||''),[style,setStyle]=useState(project.creatorPreset||C.builtInStyle),[styles,setStyles]=useState(()=>saved('rancut-styles-v1')),[preset,setPreset]=useState(C.transitionPreset()),[transitions,setTransitions]=useState(()=>saved('rancut-transitions-v1')),[cutId,setCutId]=useState('');
+ const styleFile=useRef(),transitionFile=useRef(),soundFile=useRef();
+ const activeTrack=videos.some(t=>t.id===track)?track:videos[0]?.id||'',cuts=C.cutPairs(project,activeTrack),target=cuts.find(x=>x.right.id===cutId)?.right||cuts.find(x=>x.right.id===clip?.id)?.right||cuts[0]?.right;
+ useEffect(()=>{if(clip?.transition){setPreset(C.validateTransition(clip.transition));setTrack(clip.trackId);setCutId(clip.id);}},[clip?.id]);
+ const editShot=(i,edge,k,v)=>setStyle(s=>({...s,shots:s.shots.map((x,j)=>j===i?{...x,[edge]:{...x[edge],[k]:v}}:x)}));
+ const store=(key,value,list,set)=>{try{const next=[...list.filter(x=>x.name!==value.name),value].slice(-20);localStorage.setItem(key,JSON.stringify(next));set(next);}catch(e){fail(Error('Preset could not be saved locally; use Export to keep a file.'));}};
+ const load=async(e,type)=>{try{const f=e.target.files[0];if(!f)return;if(f.size>2000000)throw Error('Preset file is too large.');const v=JSON.parse(await f.text());if(type==='style')setStyle(C.validateStyle(v));else setPreset(C.validateTransition(v));}catch(e){fail(e);}finally{e.target.value='';}};
+ const run=fn=>{try{fn();}catch(e){fail(e);}};
+ const remove=()=>commit(p=>({...p,clips:p.clips.map(c=>{if(c.id!==target?.id)return c;const n={...c};delete n.transition;return n;})}),'Transition and attached sound removed');
+ return <div className="creatorPanel">
+ <div className="creatorCard"><h3>Style Layer</h3><p>Framing and slow zoom for the complete scene. No automatic transitions.</p>
+ <label>Main cut track<select aria-label="Style main track" value={activeTrack} onChange={e=>{setTrack(e.target.value);setCutId('');}}>{videos.map(t=><option key={t.id}>{t.id}</option>)}</select></label>
+ <label>Preset name<input value={style.name} maxLength={80} onChange={e=>setStyle({...style,name:e.target.value})}/></label>
+ <select aria-label="Saved styles" value="" onChange={e=>{if(e.target.value==='builtin')setStyle(structuredClone(C.builtInStyle));else run(()=>setStyle(C.validateStyle(styles[+e.target.value])));}}><option value="">Load saved style…</option><option value="builtin">Storytelling (built-in)</option>{styles.map((s,i)=><option key={i} value={i}>{s.name}</option>)}</select>
+ <button onClick={()=>run(()=>setStyle(C.captureStyle(project,style.name)))}>Capture edited Style layer</button>
+ <details><summary>Edit framing choices ({style.shots.length})</summary>{style.shots.map((s,i)=><div className="shotEditor" key={i}><input aria-label={`Shot ${i+1} name`} value={s.name} maxLength={80} onChange={e=>setStyle({...style,shots:style.shots.map((x,j)=>j===i?{...x,name:e.target.value}:x)})}/>{['from','to'].map(edge=><fieldset key={edge}><legend>{edge==='from'?'Start':'End'}</legend>{['scale','x','y'].map(k=><label key={k}>{k}<input type="number" min={k==='scale'?100:-30} max={k==='scale'?180:30} value={s[edge][k]} onChange={e=>editShot(i,edge,k,+e.target.value)}/></label>)}</fieldset>)}<button disabled={style.shots.length===1} onClick={()=>setStyle({...style,shots:style.shots.filter((_,j)=>j!==i)})}>Remove choice</button></div>)}<button disabled={style.shots.length>=20} onClick={()=>setStyle({...style,shots:[...style.shots,structuredClone(C.builtInStyle.shots[0])]})}>+ Framing choice</button></details>
+ <button className="primary" onClick={()=>commit(p=>C.applyStyle(p,activeTrack,style,Date.now()),'Style applied · click a Style segment to edit or lock it')}>Apply / regenerate Style</button>
+ <div className="creatorButtons"><button onClick={()=>run(()=>store('rancut-styles-v1',C.validateStyle(style),styles,setStyles))}>Save style</button><button onClick={()=>run(()=>download(C.validateStyle(style),style.name+'.rancut-style'))}>Export</button><button onClick={()=>styleFile.current.click()}>Import</button></div><input ref={styleFile} hidden type="file" accept=".json" onChange={e=>load(e,'style')}/>
+ </div>
+ <div className="creatorCard"><h3>Manual transitions</h3><p>Choose a cut below, or drag the transition onto a cut marker.</p>
+ <label>Cut<select aria-label="Transition cut" value={target?.id||''} onChange={e=>{setCutId(e.target.value);const right=cuts.find(x=>x.right.id===e.target.value)?.right;if(right){seek(right.start);if(right.transition)setPreset(C.validateTransition(right.transition));}}}><option value="" disabled>No touching cuts</option>{cuts.map(x=><option key={x.right.id} value={x.right.id}>{stamp(x.right.start)} · {x.right.name}</option>)}</select></label>
+ <select aria-label="Saved transitions" value="" onChange={e=>run(()=>setPreset(C.validateTransition(transitions[+e.target.value])))}><option value="">Load saved transition…</option>{transitions.map((s,i)=><option key={i} value={i}>{s.name}</option>)}</select>
+ <label>Transition<select aria-label="Transition type" value={preset.kind} onChange={e=>setPreset(C.transitionPreset(e.target.value))}>{C.transitionKinds.map(k=><option key={k} value={k}>{k==='fade'?'Fade through black':k==='paper'?'Paper wipe':k==='whoosh'?'Whoosh swipe':k}</option>)}</select></label>
+ <label>Name<input value={preset.name} maxLength={80} onChange={e=>setPreset({...preset,name:e.target.value})}/></label>
+ <label>Duration (seconds)<input aria-label="Transition duration" type="number" min="0.1" max="2" step="0.05" value={preset.duration} onChange={e=>setPreset({...preset,duration:+e.target.value})}/></label>
+ <label><input type="checkbox" checked={preset.sound} onChange={e=>setPreset({...preset,sound:e.target.checked})}/> Attached sound</label>
+ <label>Sound level (dB)<input type="number" min="-60" max="6" value={preset.gainDb} onChange={e=>setPreset({...preset,gainDb:+e.target.value})}/></label>
+ <label>Sound<select value={preset.customSound?'custom':preset.soundKind} onChange={e=>setPreset({...preset,customSound:undefined,soundKind:e.target.value})}>{['paper','whoosh','shutter','glitch'].map(k=><option key={k}>{k}</option>)}{preset.customSound&&<option value="custom">{preset.customSound.name}</option>}</select></label>
+ <button onClick={()=>soundFile.current.click()}>Replace with my sound…</button><input ref={soundFile} type="file" hidden accept="audio/*" onChange={async e=>{try{const f=e.target.files[0];if(f)setPreset({...preset,customSound:await importSound(f),sound:true});}catch(e){fail(e);}finally{e.target.value='';}}}/>
+ <button className="primary" draggable onDragStart={e=>{try{e.dataTransfer.setData('rancut-transition',JSON.stringify(C.validateTransition(preset)));}catch(err){e.preventDefault();fail(err);}}} disabled={!target} onClick={()=>commit(p=>C.attachTransition(p,target.id,preset),'Transition + sound applied')}>Apply to cut / drag to cut</button>
+ <div className="creatorButtons"><button disabled={!target?.transition} onClick={remove}>Remove</button><button disabled={!target?.transition?.sound} onClick={()=>commit(p=>C.unlinkSound(p,target.id),'Sound unlinked onto an audio track')}>Unlink sound</button></div>
+ <div className="creatorButtons"><button onClick={()=>run(()=>store('rancut-transitions-v1',C.validateTransition(preset),transitions,setTransitions))}>Save preset</button><button onClick={()=>run(()=>download(C.validateTransition(preset),preset.name+'.rancut-transition'))}>Export</button><button onClick={()=>transitionFile.current.click()}>Import</button></div><input ref={transitionFile} hidden type="file" accept=".json" onChange={e=>load(e,'transition')}/>
+ <small>Export embeds your custom sound. Built-in sounds regenerate offline. Change settings, then Apply to update a cut. Sound hits stay centred at the cut.</small>
+ </div></div>;
+}
