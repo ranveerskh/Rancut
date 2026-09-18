@@ -1,9 +1,8 @@
-# Build status — 0.4.0
+# Build status — 0.4.1
 
 - Production web build: passed.
-- Automated tests: 35 passed, including actual FFmpeg export.
-- Local Windows installer packaging: attempted, failed before producing an installer. electron-builder's dependency collector could not resolve @derhuerst/http-basic under ffmpeg-static in this environment's shared/symlinked node_modules tree.
-- No Setup.exe is included or claimed tested. The supplied GitHub Actions workflow installs a clean dependency tree on Windows and builds the NSIS Setup installer. That workflow has not been executed on a connected repository here.
-- Windows install/uninstall, shutdown and browser UI interaction remain unverified. Long 4K workloads have not been benchmarked. Hardware NVENC export and proxy generation are not implemented.
-
-Use BUILD-INSTALLER.bat in a fresh extracted folder on Windows, or the included GitHub workflow, to build the installer. Do not copy node_modules from another project.
+- Automated tests: 35 passed with real FFmpeg export.
+- GPU probe: passed on this Linux test host with a safe CPU fallback (`libx264`). On Windows the app will test NVENC/AMF/QSV/VideoToolbox at startup and use only an encoder that completes a test frame.
+- The Windows workflow now runs `npm run dist:win`, which includes `--publish never`; it does not need `GH_TOKEN`.
+- The workflow artifact path is `release/RanCut-0.4.1-Setup.exe`.
+- No prebuilt installer is included in the source ZIP. Windows installer execution, Defender scanning, code signing, browser UI interaction and 10–20 minute 4K workloads still need Windows verification.

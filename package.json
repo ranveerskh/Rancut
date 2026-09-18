@@ -1,6 +1,6 @@
 {
   "name": "rancut",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "type": "module",
   "main": "electron.cjs",
@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "node --test tests/*.test.js",
     "desktop": "electron .",
-    "dist:win": "npm run build && electron-builder --win nsis"
+    "dist:win": "npm run build && electron-builder --win nsis --publish never"
   },
   "dependencies": {
     "react": "19.1.1",
