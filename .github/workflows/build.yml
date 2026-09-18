@@ -30,12 +30,12 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: RanCut-v0.4.0-Installer
-          path: release/RanCut-0.4.0-Setup.exe
+          name: RanCut-Installer
+          path: release/RanCut-*-Setup.exe
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v4
         with:
-          name: RanCut-v0.4.0-Web-Assets
+          name: RanCut-Web-Assets
           path: dist
           if-no-files-found: error
