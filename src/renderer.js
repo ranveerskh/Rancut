@@ -32,7 +32,7 @@ export class Renderer{
  async resumeAudio(){if(!this.audio){const ctx=new AudioContext(),mix=ctx.createGain(),analyser=ctx.createAnalyser();analyser.fftSize=1024;mix.connect(analyser);analyser.connect(ctx.destination);this.audio={ctx,mix,analyser,values:new Float32Array(analyser.fftSize)};}await this.audio.ctx.resume();}
  pause(){for(const e of this.pool.values())e.el.pause();}
  meter(){if(!this.audio)return -60;const a=this.audio;a.analyser.getFloatTimeDomainData(a.values);let peak=0;for(const v of a.values)peak=Math.max(peak,Math.abs(v));return Math.max(-60,20*Math.log10(Math.max(peak,1e-5)));}
- async source(c,m,t,play,audioTrack=false){
+ async source(c,m,t,play,audioTrack=false,fast=false){
   if(!m?.url)return null;
   if(m.type==='image'){let entry=this.images.get(m.id);if(!entry||entry.url!==m.url){const im=new Image();im.src=m.url;entry={im,url:m.url,promise:im.decode()};this.images.set(m.id,entry);}await entry.promise;return entry.im;}
   const key=(audioTrack?'a:':'v:')+c.trackId;let e=this.pool.get(key);
@@ -40,19 +40,19 @@ export class Renderer{
   if(e.url!==m.url){e.el.pause();e.url=m.url;e.el.src=m.url;e.el.load();await waitEvent(e.el,'loadeddata');}
   const time=clamp(t-c.start+c.sourceIn,0,Math.max(0,m.duration-.001));
   const cut=e.clip!==c.id;e.clip=c.id;
-  if(Math.abs(e.el.currentTime-time)>(play&&!cut?.15:.001)){const pending=waitEvent(e.el,'seeked');e.el.currentTime=time;await pending;}
+  if(Math.abs(e.el.currentTime-time)>(play&&!cut?(fast?.5:.15):.001)){const pending=waitEvent(e.el,'seeked');e.el.currentTime=time;await pending;}
   if(audioTrack&&this.audio){if(!e.node){e.node=this.audio.ctx.createMediaElementSource(e.el);e.gain=this.audio.ctx.createGain();e.node.connect(e.gain);e.gain.connect(this.audio.mix);}const now=this.audio.ctx.currentTime,gain=10**((c.fx?.gainDb??0)/20),f=fadeDuration(c),param=e.gain.gain;param.cancelScheduledValues(now);param.setValueAtTime(gain*envelope(c,t),now);if(play&&f){const into=t-c.start,remaining=c.start+c.duration-t;if(into<f)param.linearRampToValueAtTime(gain,now+f-into);if(remaining>f)param.setValueAtTime(gain,now+remaining-f);param.linearRampToValueAtTime(0,now+Math.max(0,remaining));}e.el.muted=false;}
   else if(audioTrack)e.el.muted=true;
   if(play){if(e.el.paused)await e.el.play().catch(()=>{});}else e.el.pause();return e.el;
  }
  uniforms(fx){const d=fxDefault(),f={...d,...fx},k={...d.chroma,...f.chroma},c={...d.color,...f.color},tr={...d.transform,...f.transform};this.i('keyOn',k.enabled?1:0);this.i('matte',k.matte?1:0);const hex=k.key||'#13470e';this.gl.uniform3f(this.loc('key'),...([1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255)));for(const n of ['threshold','softness','choke','feather','spill','decontam'])this.f(n,k[n]);this.f('scale',tr.scale/100);this.f('opacity',tr.opacity/100);this.v2('offset',tr.x/250,-tr.y/250);this.f('blur',f.blur||0);this.f('exposure',c.exposure);this.f('contrast',c.contrast/100);this.f('saturation',c.saturation/100);this.f('temp',c.temp/100);this.f('tint',c.tint/100);}
- async draw(p,media,t,{play=false,width=1280,exact=false}={}){
+ async draw(p,media,t,{play=false,width=1280,exact=false,fast=false}={}){
   if(this.disposed)return false;if(this.drawing&&!exact)return false;this.drawing=true;
   try{
    const transition=transitionEvents(p).find(v=>t>=v.start&&t<v.start+v.duration);p=withTransitionAudio(p);
    const active=activeAt(p,t),sources=new Map(),visible=p.tracks.filter(x=>x.type!=='audio'&&!x.hidden).slice().reverse();
    const used=new Set();
-   for(const c of active){const tr=p.tracks.find(x=>x.id===c.trackId);if(!tr)continue;const a=tr.type==='audio';if(exact&&a)continue;if(a?tr.muted:tr.hidden)continue;if(c.kind==='adjustment')continue;used.add((a?'a:':'v:')+c.trackId);const meta=p.media.find(m=>m.id===c.mediaId),m=meta?.sound?soundRuntime(meta):media.find(m=>m.id===c.mediaId);sources.set(c.id,await this.source(c,m,t,play,a));}
+   for(const c of active){const tr=p.tracks.find(x=>x.id===c.trackId);if(!tr)continue;const a=tr.type==='audio';if(exact&&a)continue;if(a?tr.muted:tr.hidden)continue;if(c.kind==='adjustment')continue;used.add((a?'a:':'v:')+c.trackId);const meta=p.media.find(m=>m.id===c.mediaId),m=meta?.sound?soundRuntime(meta):media.find(m=>m.id===c.mediaId);sources.set(c.id,await this.source(c,m,t,play,a,fast));}
    for(const [k,e] of this.pool)if(!used.has(k)){e.el.pause();if(k.startsWith('a:soundtrack_')){e.el.removeAttribute('src');e.el.load();e.node?.disconnect();e.gain?.disconnect();this.pool.delete(k);}}
    const w=Math.round(width/2)*2,h=Math.round((w*p.height/p.width)/2)*2;this.resize(w,h);const g=this.gl;g.viewport(0,0,w,h);g.useProgram(this.program);g.activeTexture(g.TEXTURE0);let target=0;g.bindFramebuffer(g.FRAMEBUFFER,this.targets[target].fbo);g.clearColor(0,0,0,0);g.clear(g.COLOR_BUFFER_BIT);
    for(const tr of visible){const c=active.find(c=>c.trackId===tr.id);if(!c)continue;this.uniforms(c.kind==='adjustment'?{...c.fx,transform:motionAt(c,t)}:c.fx);

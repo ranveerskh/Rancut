@@ -31,7 +31,7 @@ export async function createApi({ffmpeg,exportDir,settingsPath}={}){
    const u=new URL(req.url,`http://${host}`),parts=u.pathname.split('/').filter(Boolean);
    if(req.method==='GET'&&parts[1]==='output')return json(res,200,{directory:output.get()});
    if(req.method==='POST'&&parts[1]==='output'){const cfg=JSON.parse(await body(req));if([...jobs.values()].some(j=>['frames','finishing'].includes(j.state)))throw Error('Wait for the current export before changing folder.');return json(res,200,{directory:await output.set(cfg.directory)});}
-   if(req.method==='GET'&&parts[1]==='health')return json(res,200,{ffmpeg:!!ffmpeg,version:'0.4.5',encoder:encoderInfo.selected,hardwareEncoders:encoderInfo.hardware,encoderMode:encoderInfo.mode,gpu:encoderInfo.gpu,ffmpegSource:encoderInfo.ffmpegSource});
+   if(req.method==='GET'&&parts[1]==='health')return json(res,200,{ffmpeg:!!ffmpeg,version:'0.4.6',encoder:encoderInfo.selected,hardwareEncoders:encoderInfo.hardware,encoderMode:encoderInfo.mode,gpu:encoderInfo.gpu,ffmpegSource:encoderInfo.ffmpegSource});
    if(req.method==='POST'&&parts[1]==='media'){
     const id=randomUUID(),dest=path.join(root,id+'.media');let size=0;const stream=createWriteStream(dest);
     try{req.on('data',b=>{size+=b.length;if(size>MAX_FILE)req.destroy(Error('File exceeds 50 GB.'));});await pipeline(req,stream);}catch(e){await rm(dest,{force:true});throw e;}
@@ -42,16 +42,20 @@ export async function createApi({ffmpeg,exportDir,settingsPath}={}){
    }
    if(req.method==='POST'&&parts[1]==='export'&&parts.length===2){
     if([...jobs.values()].some(j=>['frames','finishing'].includes(j.state)))throw Error('An export is already running.');
-    const cfg=JSON.parse(await body(req));if(!finite(cfg.width,64,7680)||!finite(cfg.height,64,7680)||cfg.width%2||cfg.height%2||![24,25,30,50,60].includes(cfg.fps)||!Number.isInteger(cfg.frames)||cfg.frames<1||cfg.frames>216000)throw Error('Invalid export format.');
+    const cfg=JSON.parse(await body(req));if(!finite(cfg.width,64,7680)||!finite(cfg.height,64,7680)||cfg.width%2||cfg.height%2||![24,25,30,50,60].includes(cfg.fps)||!Number.isInteger(cfg.frames)||cfg.frames<1||cfg.frames>216000||!['jpeg','rgba','h264'].includes(cfg.frameFormat||'jpeg'))throw Error('Invalid export format.');
     if(!Array.isArray(cfg.audio)||cfg.audio.length>2000)throw Error('Invalid audio timeline.');for(const a of cfg.audio)if(!files.has(a.serverId)||!finite(a.start,0,14400)||!finite(a.sourceIn,0,14400)||!finite(a.duration,.001,14400)||!finite(a.gainDb,-60,12)||!finite(a.fadeMs??5,0,20))throw Error('Missing audio source or invalid timing.');
     const outputDirectory=await output.prepare();const id=randomUUID(),dir=path.join(root,id);await import('node:fs/promises').then(fs=>fs.mkdir(dir));const silent=path.join(dir,'silent.mp4');
-    const raw=cfg.frameFormat==='rgba',jpeg=cfg.frameFormat==='jpeg';const input=raw?['-f','rawvideo','-pixel_format','rgba','-video_size',`${cfg.width}x${cfg.height}`]:['-f','image2pipe','-c:v',jpeg?'mjpeg':'png'];
+    const raw=cfg.frameFormat==='rgba',jpeg=cfg.frameFormat==='jpeg',h264=cfg.frameFormat==='h264';const input=raw?['-f','rawvideo','-pixel_format','rgba','-video_size',`${cfg.width}x${cfg.height}`]:h264?['-f','h264']:['-f','image2pipe','-c:v',jpeg?'mjpeg':'png'];
     const encoder=cfg.encoder==='cpu'?'libx264':(cfg.encoder&&encoderInfo.available.includes(cfg.encoder)?cfg.encoder:encoderInfo.selected);
-    const proc=start(['-y','-v','error',...input,'-framerate',String(cfg.fps),'-i','-',...(raw?['-vf','vflip']:[]),...videoEncoderArgs(encoder,cfg.quality),'-pix_fmt','yuv420p',silent]);
+    const proc=start(['-y','-v','error',...input,'-framerate',String(cfg.fps),'-i','-',...(raw?['-vf','vflip']:[]),...(h264?['-c:v','copy']:videoEncoderArgs(encoder,cfg.quality)),...(h264?[]:['-pix_fmt','yuv420p']),silent]);
     const fileName=`RanCut-${new Date().toISOString().replace(/[:.]/g,'-')}-${id.slice(0,6)}.mp4`;
-    const j={id,dir,cfg,silent,proc,outputDirectory,finalPath:path.join(outputDirectory,fileName),partialPath:path.join(outputDirectory,'.'+fileName+'.partial.mp4'),state:'frames',received:0,busy:false,error:null};jobs.set(id,j);proc.done.catch(e=>{if(j.state!=='cancelled'){j.state='failed';j.error=e.message;}});return json(res,200,{id});
+    const j={id,dir,cfg,silent,proc,outputDirectory,finalPath:path.join(outputDirectory,fileName),partialPath:path.join(outputDirectory,'.'+fileName+'.partial.mp4'),state:'frames',received:0,busy:false,encoded:false,error:null};jobs.set(id,j);proc.done.catch(e=>{if(j.state!=='cancelled'){j.state='failed';j.error=e.message;}});return json(res,200,{id});
    }
    const j=jobs.get(parts[2]);if(parts[1]==='export'&&!j)throw Error('Export not found.');
+   if(req.method==='POST'&&parts[3]==='encoded'){
+    if(j.cfg.frameFormat!=='h264'||j.state!=='frames'||j.busy)throw Error('Unexpected encoded video.');j.busy=true;
+    try{let bytes=0;for await(const chunk of req){bytes+=chunk.length;if(j.proc.stdin.destroyed)throw Error('Encoder stopped.');if(!j.proc.stdin.write(chunk))await Promise.race([once(j.proc.stdin,'drain'),j.proc.done.then(()=>{throw Error('Encoder stopped.');})]);}j.proc.stdin.end();await j.proc.done;j.received=j.cfg.frames;j.encoded=true;return json(res,200,{received:j.received,bytes});}finally{j.busy=false;}
+   }
    if(req.method==='POST'&&parts[3]==='frame-batch'){
     const startIndex=Number(u.searchParams.get('start')),count=Number(u.searchParams.get('count'));
     if(j.state!=='frames'||j.busy||!Number.isInteger(startIndex)||startIndex!==j.received||!Number.isInteger(count)||count<1||count>8||j.received+count>j.cfg.frames)throw Error('Unexpected frame batch.');j.busy=true;
@@ -70,7 +74,7 @@ export async function createApi({ffmpeg,exportDir,settingsPath}={}){
    }
    if(req.method==='POST'&&parts[3]==='cancel'){j.state='cancelled';await stop(j.proc);await rm(j.partialPath,{force:true});await rm(j.dir,{recursive:true,force:true});return json(res,200,{ok:true});}
    if(req.method==='POST'&&parts[3]==='finish'){
-    if(j.state!=='frames'||j.received!==j.cfg.frames)throw Error('Not all frames were received.');j.state='finishing';j.proc.stdin.end();
+    if(j.state!=='frames'||j.received!==j.cfg.frames)throw Error('Not all frames were received.');j.state='finishing';if(!j.encoded)j.proc.stdin.end();
     (async()=>{try{await j.proc.done;if(j.state==='cancelled')return;const audio=j.cfg.audio,inputs=[...new Set(audio.map(a=>a.serverId))],args=['-y','-v','error','-i',j.silent];for(const id of inputs)args.push('-i',files.get(id).path);let filters=[];
       for(let i=0;i<audio.length;i++){const a=audio[i],idx=inputs.indexOf(a.serverId)+1;filters.push(audioFilter(a,idx,i));}
       if(audio.length){filters.push(audio.map((a,i)=>`[a${i}]`).join('')+`amix=inputs=${audio.length}:normalize=0:dropout_transition=0,alimiter=limit=0.99:level=false:latency=true,apad[out]`);const f=path.join(j.dir,'audio.txt');await writeFile(f,filters.join(';\n'));args.push('-filter_complex_script',f,'-map','0:v:0','-map','[out]','-c:a','aac','-b:a','192k');}
@@ -80,7 +84,7 @@ export async function createApi({ffmpeg,exportDir,settingsPath}={}){
    }
    if(req.method==='GET'&&parts[3]==='status')return json(res,200,{state:j.state,error:j.error,received:j.received,savedPath:j.state==='complete'?j.finalPath:null,outputDirectory:j.outputDirectory});
    if(req.method==='GET'&&parts[3]==='download'){
-    if(j.state!=='complete')throw Error('Export is not ready.');res.setHeader('Content-Type','video/mp4');res.setHeader('Content-Disposition','attachment; filename="RanCut-v0.4.5.mp4"');res.setHeader('Content-Length',(await stat(j.output)).size);await pipeline(createReadStream(j.output),res);return;
+    if(j.state!=='complete')throw Error('Export is not ready.');res.setHeader('Content-Type','video/mp4');res.setHeader('Content-Disposition','attachment; filename="RanCut-v0.4.6.mp4"');res.setHeader('Content-Length',(await stat(j.output)).size);await pipeline(createReadStream(j.output),res);return;
    }
    return next();
   }catch(e){if(!res.headersSent)json(res,422,{error:e.message||'Local processing failed.'});else res.destroy();}
