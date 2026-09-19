@@ -1,7 +1,7 @@
 import {validPose} from './scene-core.js';
 import {validateTransition} from './creator.js';
 import {soundBytes} from './sounds.js';
-export const VERSION='0.4.9';
+export const VERSION='0.5.0';
 export const uid=(p='c')=>`${p}_${crypto.randomUUID()}`;
 export const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 export const end=c=>c.start+c.duration;
@@ -19,6 +19,7 @@ export function validate(p){
  for(const m of p.media)if(m.sound)soundBytes(m.sound);
  const ts=track(p),ids=new Set(),ms=new Map(p.media.map(m=>[m.id,m]));if(ts.size!==p.tracks.length)throw Error('Duplicate track IDs.');
  for(const t of p.tracks)if(!['video','audio','adjustment'].includes(t.type))throw Error('Invalid track type.');
+ for(const t of p.tracks){if(t.gainDb!==undefined&&(!Number.isFinite(t.gainDb)||t.gainDb< -60||t.gainDb>12))throw Error('Invalid track volume.');if(t.duckDb!==undefined&&(!Number.isFinite(t.duckDb)||t.duckDb< -60||t.duckDb>0))throw Error('Invalid BGM ducking level.');}
  for(const c of p.clips){
   if(c.transition)validateTransition(c.transition);
   if(c.fx?.scene){const m=c.fx.scene;if(!validPose(m.from)||!validPose(m.to)||!Number.isFinite(m.span)||m.span<=0||!Number.isFinite(m.offset)||m.offset<0)throw Error('Invalid Style motion.');}

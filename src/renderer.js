@@ -1,5 +1,6 @@
+import {effectiveGain} from './audio-mix.js';
 import {sourceForRender} from './export-config.js';
-import {motionAt} from './scene-core.js';
+import {motionAt,sceneTrackOrder} from './scene-core.js';
 import {transitionEvents,withTransitionAudio} from './creator.js';
 import {soundRuntime} from './sounds.js';
 import {compositePass} from './composite-shader.js';
@@ -51,9 +52,9 @@ export class Renderer{
   if(this.disposed)return false;if(this.drawing&&!exact)return false;this.drawing=true;
   try{
    const transition=transitionEvents(p).find(v=>t>=v.start&&t<v.start+v.duration);p=withTransitionAudio(p);
-   const active=activeAt(p,t),sources=new Map(),visible=p.tracks.filter(x=>x.type!=='audio'&&!x.hidden).slice().reverse();
+   const active=activeAt(p,t),sources=new Map();const visible=sceneTrackOrder(p,t);
    const used=new Set();
-   for(const c of active){const tr=p.tracks.find(x=>x.id===c.trackId);if(!tr)continue;const a=tr.type==='audio';if(exact&&a)continue;if(a?tr.muted:tr.hidden)continue;if(c.kind==='adjustment')continue;used.add((a?'a:':'v:')+c.trackId);const meta=p.media.find(m=>m.id===c.mediaId),m=meta?.sound?soundRuntime(meta):media.find(m=>m.id===c.mediaId);sources.set(c.id,await this.source(c,sourceForRender(m,{exact,audio:a}),t,play,a,fast));}
+   for(const c of active){const tr=p.tracks.find(x=>x.id===c.trackId);if(!tr)continue;const a=tr.type==='audio';if(exact&&a)continue;if(a?tr.muted:tr.hidden)continue;if(c.kind==='adjustment')continue;used.add((a?'a:':'v:')+c.trackId);const meta=p.media.find(m=>m.id===c.mediaId),m=meta?.sound?soundRuntime(meta):media.find(m=>m.id===c.mediaId);sources.set(c.id,await this.source(a?{...c,fx:{...c.fx,gainDb:effectiveGain(p,c,t)}}:c,sourceForRender(m,{exact,audio:a}),t,play,a,fast));}
    for(const [k,e] of this.pool)if(!used.has(k)){e.el.pause();if(k.startsWith('a:soundtrack_')){e.el.removeAttribute('src');e.el.load();e.node?.disconnect();e.gain?.disconnect();this.pool.delete(k);}}
    const w=Math.round(width/2)*2,h=Math.round((w*p.height/p.width)/2)*2;this.resize(w,h);const g=this.gl;g.viewport(0,0,w,h);g.useProgram(this.program);g.activeTexture(g.TEXTURE0);let target=0;g.bindFramebuffer(g.FRAMEBUFFER,this.targets[target].fbo);g.clearColor(0,0,0,0);g.clear(g.COLOR_BUFFER_BIT);
    for(const tr of visible){const c=active.find(c=>c.trackId===tr.id);if(!c)continue;this.uniforms(c.kind==='adjustment'?{...c.fx,transform:motionAt(c,t)}:c.fx);

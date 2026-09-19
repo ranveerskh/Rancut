@@ -1,34 +1,39 @@
-# Executed validation — RanCut 0.4.9
+# RanCut 0.5.0 validation
+Date: 2026-09-19. Linux, Node 24, system FFmpeg CPU. Windows CI uses Node 22.
 
-Date: 2026-09-19. Host: Linux, Node 24, system FFmpeg (CPU encoding).
-Windows workflow targets Node 22. Production dependencies are unchanged.
-New dev-only test dependencies: fake-indexeddb and jsdom.
+## Executed
+- 68 tests passed; 0 failed; 0 skipped.
+- Production Vite build passed (1604 modules).
+- Electron and preload syntax checks passed.
+- Version, lockfile and runtime-package checks passed.
+- SVG rendered into PNG/ICO; icon visually inspected.
+- No production dependency was added for this update.
 
-## Tests
-- Final result: **57 passed, 0 failed, 0 skipped**.
-- Production build: passed (1596 modules). Electron/preload syntax: passed.
-- Original 52 regression tests retained and passing.
-- Four catalog/recovery tests: independent project persistence, legacy recovery
-  compatibility, bounded history, safe recovery copies, rename, sorting and Trash.
-- One full-app DOM integration test: create, Home, rename, duplicate, Trash,
-  restore, About, Account, restart into Home and reopen. Uses simulated DOM,
-  fake IndexedDB and mocked GPU/media renderer; not browser visual verification.
-- Test command: RANCUT_FFMPEG=/usr/bin/ffmpeg npm test.
-- Production build and Electron/preload syntax checks.
-- Custom icon inspected; ICO includes 16 through 256 px sizes.
+## Coverage added
+- Auto Edit green/regular modes; skip options; invalid or mismatched sources;
+  peak-safe voice gain; silence padding; source immutability; repeating background
+  and BGM; linked main A/V; logo exclusion/inclusion; Style and cut-attached sound.
+- Track removal preserves source media and unlinks surviving clips. Locked
+  counterparts remain protected.
+- Clip / selected / track gain, preview/export effective-gain parity.
+- BGM interval ducking, export splitting and voice mute behaviour.
+- Conservative/aggressive short-leftover candidates using source offsets.
+- Both built-in Style presets and explicit transition replacement.
+- Simulated DOM integration: edit/reset/save/apply Style, + transition modal,
+  full-video/no-sound settings, full-track gain, Auto Edit review/generate,
+  separate project persistence, track × and Undo.
+  GPU, native reconnect, green sample and audio analysis are mocked in this DOM
+  test. Pure processing tests use fixture analysis; these are not real footage QA.
 
-Existing tests include ripple/cut/gap logic, links, selections, Style and transition
-presets, audio gain, actual short FFmpeg exports/muxing/cancellation, a short 4K
-encode/decode and proxy generation. These are not long-project benchmarks.
+## Retained tests
+Project Home/recovery; linked ripple; cuts/gaps/selection; waveform math;
+Style/transition presets; existing FFmpeg MP4/audio export tests; proxy generation;
+short synthetic 4K encode/decode; Direct encoder packet/cancel logic and sleep
+blocker lifecycle mocks. These are NOT long-video RTX benchmarks.
 
 ## Not verified here
-- Real Windows installation, upgrade, uninstall, native save dialogs/close prompts,
-  shortcut appearance, native reconnect and RTX performance.
-- Real Chromium mouse/visual tests: browser installation repeatedly timed out.
-- Long 4K videos, real source quality, battery/suspend behaviour or crash injection.
-- Live updates, feedback submission, accounts, subscriptions or payments.
-  These services are not configured or active in this build.
-- Code signing, antivirus clearance, full licensing/public-release approval.
-
-Use the GitHub workflow to build the Windows installer. Back up project files;
-check an existing project and a short export before a long editing session.
+Real Windows installer/upgrade/uninstall, native dialogs, real browser visual
+layout/mouse scaling, RTX/WebCodecs/chroma visual quality, speech/cough accuracy,
+long-project audio sync and export endurance. Browser binary download previously
+timed out. No Windows or real browser test is claimed.
+No signing, antivirus clearance, live subscriptions/ads or public-release approval.

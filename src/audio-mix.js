@@ -1,0 +1,6 @@
+import {clamp,end,mergeRanges,EPS} from './timeline.js';
+const cache=new WeakMap();
+export function duckRanges(p,track){if(!track?.duckAgainst)return [];let byTrack=cache.get(p);if(!byTrack){byTrack=new Map();cache.set(p,byTrack);}if(!byTrack.has(track.id)){const voice=p.tracks.find(t=>t.id===track.duckAgainst);byTrack.set(track.id,voice&&!voice.muted?mergeRanges(p.clips.filter(c=>c.trackId===voice.id).map(c=>[c.start,end(c)])):[]);}return byTrack.get(track.id);}
+export function effectiveGain(p,c,t=c.start){const tr=p.tracks.find(x=>x.id===c.trackId);const duck=duckRanges(p,tr).some(([a,b])=>t>=a&&t<b)?(tr.duckDb??-10):0;return clamp((c.fx?.gainDb||0)+(tr?.gainDb||0)+duck,-60,12);}
+// Export uses the same voice-clip intervals as preview, with tiny cut fades.
+export function mixedAudioClips(p){return p.clips.filter(c=>p.tracks.find(t=>t.id===c.trackId)?.type==='audio'&&!p.tracks.find(t=>t.id===c.trackId)?.muted).flatMap(c=>{const tr=p.tracks.find(t=>t.id===c.trackId),points=[...new Set([c.start,end(c),...duckRanges(p,tr).flat().filter(x=>x>c.start&&x<end(c))])].sort((a,b)=>a-b);return points.slice(0,-1).flatMap((a,i)=>{const b=points[i+1];return b-a>EPS?[{...c,start:a,sourceIn:c.sourceIn+a-c.start,duration:b-a,fx:{...c.fx,gainDb:effectiveGain(p,c,(a+b)/2)}}]:[];});});}

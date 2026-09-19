@@ -10,3 +10,9 @@ export function motionAt(c,time){
  pose.x=Math.max(-margin,Math.min(margin,pose.x));pose.y=Math.max(-margin,Math.min(margin,pose.y));
  return {...pose,opacity:100};
 }
+
+export function sceneTrackOrder(p,time){
+ const tracks=p.tracks.filter(t=>t.type!=='audio'&&!t.hidden).slice().reverse();
+ const includeLogo=p.clips.some(c=>c.fx?.scene?.includeLogo&&time>=c.start&&time<c.start+c.duration&&tracks.some(t=>t.id===c.trackId));
+ return includeLogo?tracks:[...tracks.filter(t=>!t.fixedOverlay),...tracks.filter(t=>t.fixedOverlay)];
+}
