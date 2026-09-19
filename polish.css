@@ -1,0 +1,67 @@
+/* Scoped presentation layer: no changes to timeline coordinates or clip sizing. */
+:root{color-scheme:dark;--panel:#11171e;--line:#27313c;--accent:#a1e8cd;font-family:Inter,"Segoe UI",sans-serif}
+*{scrollbar-width:thin;scrollbar-color:#455462 #10161d}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track,*::-webkit-scrollbar-corner{background:#10161d}
+*::-webkit-scrollbar-thumb{background:#455462;border:2px solid #10161d;border-radius:8px}
+button,select,input{font-family:inherit}
+button{transition:background-color .1s,border-color .1s;cursor:pointer}
+button:disabled{cursor:default;opacity:.45}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.topbar{height:52px;padding:0 14px;gap:12px}
+.brand{gap:10px;flex-shrink:0}.brand b{font-size:23px}.brand span{letter-spacing:1px;font-size:9px}
+.topActions{gap:5px;min-width:0}.topActions button{height:30px;border-radius:6px;font-size:11px;padding:0 10px;white-space:nowrap}
+.topActions .iconBtn{width:30px;padding:0}.topActions .exportBtn{background:var(--accent);color:#10261f;padding:0 15px}
+.gpuStatus{max-width:220px;overflow:hidden;text-overflow:ellipsis;font-size:9px}
+.statusBar{height:25px;min-height:25px;font-size:10px;background:#101a1a;padding:0 14px}
+.statusBar span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.viewerPanel{padding:12px;gap:8px}.viewer{border-radius:8px}.transport{min-height:38px;padding:6px 10px;gap:12px;border-radius:7px}
+.transport select{height:26px;font-size:10px}.transport span{font-size:10px}
+.leftPanel,.inspector{background:var(--panel)}.tabs{position:sticky;top:0;background:var(--panel);z-index:2;margin:0 0 12px;padding:0 4px;display:flex}
+.tabs button{padding:12px 5px;font-size:11px;flex:1}
+.importBox{min-height:86px;padding:12px;gap:6px;margin-bottom:10px;border-radius:8px}.importBox svg{width:21px}.importBox b{font-size:12px}
+.mediaHint{font-size:10px;line-height:1.5;margin-bottom:12px}
+.mediaCard{padding:8px;gap:8px;border-radius:7px;margin-bottom:7px;min-height:55px}
+.mediaIcon{width:34px;height:34px;flex:0 0 34px}.mediaIcon svg{width:18px}.mediaMeta{min-width:0}.mediaMeta b{font-size:11px}.mediaMeta span,.mediaMeta small{font-size:9px}
+.missingMedia{border:1px solid #ce626a;background:#2d1b22}.missingMedia .mediaMeta span{color:#ffafb7}
+.missingClip{border:1px solid #ff7c87!important;background:repeating-linear-gradient(135deg,#42212b,#42212b 10px,#301c24 10px,#301c24 20px)!important}
+.missingClip .clipTop{color:#ffd5d9}.missingBanner{background:#351d26;color:#ffbdc6;border-bottom:1px solid #783f4c;padding:7px 12px;font-size:11px}
+.inspectorHead{padding:12px 14px}.insTabs button{padding:10px 4px;font-size:11px}.insBody{padding:12px 14px}
+.slider{margin-bottom:16px}.slider>span{font-size:11px}.clipName{font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.effectTransfer{gap:6px;padding:10px 12px;flex-wrap:wrap}.effectTransfer select{min-width:100%;font-size:11px}
+.effectTransfer button{flex:1;font-size:10px;min-height:28px}
+.timelineToolbar{min-height:44px;padding:6px 10px;gap:12px;align-items:flex-start}
+.editBtns{display:flex;flex-wrap:wrap;gap:4px}.editBtns button{height:28px;font-size:10px;padding:0 8px;border-radius:5px}
+.editBtns button:nth-child(6),.editBtns button:nth-child(8),.editBtns button:nth-child(13){margin-left:8px}
+.zoomCtl{flex-shrink:0;gap:6px}.zoomCtl input{width:105px}.zoomCtl button{height:28px;font-size:11px}
+.trackToolbar{padding:5px 10px;min-height:34px;gap:7px;font-size:10px}.trackToolbar select,.trackToolbar button{height:27px;font-size:10px}
+.trackToolbar span{font-size:10px;color:#7f909f}
+.clipBox{border-radius:5px}.clipBox.selected{box-shadow:inset 0 0 0 1px #c5f4e4;border-color:#b3edda}
+.clipTop b{font-size:10px}.panelDivider{height:7px;background:#19232e;cursor:row-resize}
+.effectsList>div{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:12px}.effectsList b{white-space:normal;min-width:0}
+.proxyTools{display:grid;gap:7px;padding:12px 0;border-top:1px solid var(--line);margin-top:12px;font-size:11px}
+.proxyTools select,.proxyTools button{width:100%;height:29px;font-size:11px}.proxyTools small{color:#889ca9;line-height:1.5}
+.creatorCard{padding:12px;border:1px solid var(--line);border-radius:8px;margin-bottom:12px;background:#151d26}
+.creatorCard h3{font-size:14px;margin:0 0 8px}.creatorCard p{font-size:11px;line-height:1.65;color:#aab9c5}.creatorCard small{font-size:10px;line-height:1.5;color:#8eaaa3}
+.creatorCard label{font-size:11px;gap:6px}.creatorCard select,.creatorCard input:not([type=checkbox]){height:30px;min-width:0;border-radius:5px;font-size:11px}
+.creatorCard button{min-height:29px;border-radius:5px;font-size:11px}
+.creatorCard details{margin:10px 0}.creatorCard summary{font-size:11px;color:#93b1b6;cursor:pointer}
+.creatorCard fieldset{border:1px solid #33424e;border-radius:6px;padding:8px;margin:8px 0}
+.creatorCard fieldset label{min-width:0}.creatorCard fieldset input{width:100%}
+.styleChoices{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:12px 0}
+.styleChoices button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 5px;background:#10171e;border:1px solid #34404d}
+.styleChoices button.chosen{background:#193b33;border-color:#7ac4ad}.styleChoices b{font-size:11px}.styleChoices small{font-size:9px}
+.shotThumb{position:relative;display:grid;place-items:center;width:56px;height:32px;background:#243844;border:1px solid #55727e;border-radius:4px;overflow:hidden}
+.shotThumb i{width:13px;height:22px;background:#98d8c3;border-radius:7px 7px 0 0;transform:translateY(8px)}
+.shotThumb.close-up i{transform:translateY(8px) scale(1.5)}.shotThumb.left i{transform:translate(-10px,8px)}.shotThumb.right i{transform:translate(10px,8px)}.shotThumb.slow-zoom:after{content:'↗';position:absolute;right:2px;top:0;color:#c4f9e7}
+.exportModal{width:min(520px,94vw);max-height:90vh;overflow:auto}.modalHead{padding:18px 20px}.exportGrid,.exportMode{padding:10px 20px}
+.exportMode label{display:grid;gap:8px;font-size:11px;color:#9faebd}.exportMode select{height:34px;padding:0 8px}
+.exportGrid select{height:34px}.sleepNote{margin:0 20px 12px;padding:10px;border:1px solid #715b37;background:#282419;color:#e1ca97;font-size:11px;line-height:1.6;border-radius:6px}
+.helpDialog{width:min(660px,90vw);max-height:85vh;background:#111923;color:#dce7ed;border:1px solid #405464;border-radius:12px;padding:0}
+.helpDialog::backdrop{background:#000b}.helpDialog header,.helpDialog footer{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;background:#17232d}
+.helpDialog h2{margin:4px 0 0;font-size:22px}.helpDialog h2 small{font-size:12px;color:#90a9b5}.helpDialog header small{font-size:10px;letter-spacing:1px;color:#9ddbc6}
+.helpDialog nav{display:flex;gap:6px;padding:12px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.helpDialog button{background:#202e3a;border:1px solid #425566;border-radius:6px;color:#e0e8ed;padding:7px 11px}.helpDialog button.active{border-color:#a1e8cd;background:#224338}
+.helpDialog section{padding:10px 24px 20px;font-size:13px;line-height:1.8}.helpDialog li{margin-bottom:6px}
+@media(max-width:1150px){.brand span{display:none}.gpuStatus{max-width:130px}.topActions{gap:3px}.topActions button{padding:0 7px}.trackToolbar span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.zoomCtl input{width:65px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

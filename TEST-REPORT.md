@@ -1,13 +1,19 @@
-# RanCut 0.5.0 validation
+# RanCut 0.5.1 validation
 Date: 2026-09-19. Linux, Node 24, system FFmpeg CPU. Windows CI uses Node 22.
 
 ## Executed
-- 68 tests passed; 0 failed; 0 skipped.
-- Production Vite build passed (1604 modules).
+- 71 tests passed; 0 failed; 0 skipped.
+- Production Vite build passed (1606 modules).
 - Electron and preload syntax checks passed.
 - Version, lockfile and runtime-package checks passed.
 - SVG rendered into PNG/ICO; icon visually inspected.
 - No production dependency was added for this update.
+
+## 0.5.1 coverage added
+- Clip duplication/repeat keeps linked A/V together and trims the final repeat.
+- Still image/adjustment extend-to-end, validated picture crop, and subject-frame data.
+- Auto Edit carries optional crop and a manual protected-subject frame into its editable copy.
+- DOM workflow covers the new Crop & framing Auto Edit step.
 
 ## Coverage added
 - Auto Edit green/regular modes; skip options; invalid or mismatched sources;

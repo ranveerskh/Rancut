@@ -1,7 +1,17 @@
-# RanCut 0.5.0 — Auto Edit & Creator Workflow Preview
+# RanCut 0.5.1 — Creator Framing & Repeat Tools Preview
 
 Built on 0.4.9. Project Home/recovery, native source reconnect, chroma shader,
 Reliable export, experimental Direct export and sleep protection are retained.
+
+## 0.5.1 additions
+- Duplicate selected clips or linked A/V, repeat a selection to the timeline end,
+  and extend images/still backgrounds/adjustment layers to the end.
+- Video Inspector now has a real rectangular Crop tool. Crop is rendered in the
+  same WebGL path used by preview and export, with Reset crop.
+- Protect person framing stores a manual body/head box. Creator Styles and Auto
+  Edit use it to limit aggressive zooms. It is a conservative framing helper,
+  not frame-by-frame AI body tracking; review the result.
+- Auto Edit adds a Crop & framing step and an expandable guided workspace.
 
 ## 1. Timeline and audio
 - Track × now removes populated unlocked tracks after confirmation. Other-track
