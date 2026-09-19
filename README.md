@@ -1,65 +1,90 @@
-# RanCut 0.4.7 — direct GPU export fallback
+# RanCut 0.4.9 — Project Home Preview
 
-RanCut is a local video editor for YouTube creators. It runs locally; no account or cloud upload is required for editing.
+Based on the working 0.4.8 source, not a rebuild of the editor. Original timeline
+math, chroma shader and editing shortcuts are preserved.
 
-## What changed in 0.4.7
+## New in this update
+- Startup opens Project Home. Named local projects survive restart; search, pin,
+  rename, duplicate, Trash and Restore. Original media is never deleted.
+- One-time migration of the old latest autosave into a project card. Other older
+  project files must be opened once to add them to the list.
+- Separate autosave per project, save-state indicator, up to five previous
+  recovery snapshots. Recovery creates a copy, never replaces the current edit.
+- Home/open/new flush pending saves. Project switching pauses playback and clears
+  decoder/runtime media to prevent footage leaking between projects.
+- Native close waits for save acknowledgement. Save failure keeps the app open
+  unless the user explicitly chooses Close without local save.
+- Custom mint R/play icon: desktop, taskbar, Start Menu and NSIS installer assets.
+- Help: About / version / Build 49, feedback draft download, Account & Plan panel.
+  Feedback is NOT sent anywhere. Subscription/login/billing are NOT connected;
+  all preview features remain available. No secrets, fake payment screens or gates.
+- Existing rendering/export engine and default Reliable mode preserved.
 
-- Electron/WebCodecs now use a direct H.264 stream when the local Chromium build supports a hardware encoder. Canvas frames go straight to the encoded stream; the expensive JPEG conversion is removed.
-- During direct export, source video elements play continuously instead of seeking every frame. Cuts still seek exactly when a clip changes.
-- FFmpeg receives the encoded H.264 stream and only performs the final audio mux, avoiding a second video encode. The previous JPEG-batch pipeline remains an automatic fallback.
-- If a particular source clip cannot stay decoded during continuous playback, direct export retries once through the compatibility pipeline instead of leaving a half-finished export.
-- The export dialog labels the active path as `Direct H.264` or shows the fallback render/JPEG/send timings.
+## Project Home usage
+Name a project and click New project. Click Projects to return Home. Project cards
+are stored in this app's local data, not a scan of all folders on your PC. Save
+still downloads a .rancut.json backup via the normal save dialog. That file does
+not include the videos: keep the original media or relink it after moving files.
+Trash is reversible; there is no permanent-delete button in this preview.
+The local database upgrades to schema 2. If you roll back to an older app, open
+your exported project JSON backups; its older autosave reader may not open the
+upgraded database.
 
-## Carried forward from 0.4.5
+## Existing features retained
+- Compact dark UI, consistent controls, visual framing choices, red missing
+  media cards/clips, Help/Shortcuts/Privacy/Licences/Updates and local diagnostics.
+- Creator Style: all cuts, selected clips, or selected clip to end on the chosen
+  main video track. Person + background move together. Story mix varies framing
+  per cut. Single looks apply one look. Fine tuning and preset save/import/export
+  remain. Manual Style pose edits lock that segment against regeneration.
+- Export-only desktop sleep protection, released on success/failure/cancel/exit.
+  Display stays awake too. Manual sleep, lid close, shutdown and battery loss
+  are NOT prevented. Detected system suspend aborts the export.
+- Completion notification and remembered output folder.
+- True 720p/1080p proxy files, made sequentially with a two-thread CPU encoder.
+  Video preview uses proxies; audio and final export use originals. Proxies are
+  temporary and regenerated after restart. Wait for preparation before export.
+- Unchanged paused previews no longer redraw GPU frames repeatedly.
+- Direct export fixes: preserve codec configuration object; avoid passing the
+  click event as the compatibility flag; bounded finite H264 packets work with
+  local HTTP/1; exact seeking replaces loose continuous-play export timing.
+  Failure falls back once to compatibility; failed decoders are recreated.
+- Reliable FFmpeg export remains default; Direct H264 is selectable/experimental.
+  No unmeasured GPU speed guarantee.
+- Modern Electron path capture via webUtils. Native imported files register
+  directly for analysis/export rather than being copied again.
+  Previously imported unchanged files reconnect from a local allowlist.
+  Older projects need one manual relink to establish that permission.
+- Manual HTTPS update checker implementation. Release URLs stay unconfigured
+  pending the publisher's verified hosting/branding decisions.
+- Existing presets, manual transitions + sound, chroma, gain-scaled waveforms,
+  silence cuts, linked ripple, selection, Fit/follow, dynamic tracks, autosave,
+  output-folder saving and desktop exit remain.
 
-- Electron requests the high-performance GPU before its graphics process starts. On hybrid AMD/NVIDIA laptops this asks Windows/Chromium to put the WebGL canvas on the discrete GPU instead of silently leaving effects rendering on the integrated Radeon GPU.
-- The header now reports both jobs separately: the active H.264 encoder and the actual WebGL canvas renderer. Hover it to see the complete detected GPU strings.
-- Export sends four length-prefixed JPEG frames per local request and overlaps encoding of the previous batch with rendering of the next batch. This removes most of the per-frame request overhead without buffering the whole project in RAM.
-- The export dialog reports average render, JPEG-compression, and send/encode time per frame. This makes the remaining bottleneck measurable on the target Windows PC.
-- Intermediate JPEG quality now follows Good/High/Maximum instead of always using the most expensive setting.
+## Windows installer
+Use Node 22:
+    npm ci
+    npm test
+    npm run dist:win
 
-## Carried forward from 0.4.4
+The included .github/workflows/build.yml builds without publishing or GH_TOKEN.
+Run it on the updated commit and download the Installer artifact.
+Output: release/RanCut-0.4.9-Setup.exe. This source ZIP has no executable payload.
 
-- Installer workflow builds the NSIS installer without attempting a GitHub release or requiring `GH_TOKEN`.
-- Export frames are sent as high-quality JPEG instead of uncompressed RGBA, cutting the local 4K transfer bottleneck while keeping the final H.264 quality setting.
-- Saved projects remember each imported file's source path/folder when the desktop provides it. Missing media can be matched from a selected source folder or relinked one clip at a time, with filename/size/duration checks.
-- The NVENC probe now uses a 256×256 test frame. Older builds used 16×16, which NVIDIA correctly rejects as below the minimum encoder frame size and incorrectly forced CPU fallback.
-- The app checks `nvidia-smi` separately from FFmpeg, reports the GPU model/driver, and tries PATH/system FFmpeg when the bundled binary cannot use NVENC.
-- The header distinguishes `h264_nvenc active`, `GPU found · CPU fallback`, and `CPU encoder` instead of hiding a failed GPU probe.
-- The workflow artifact points to the actual `RanCut-0.4.7-Setup.exe` filename.
-- FFmpeg probes hardware encoders at startup. If a working NVIDIA NVENC, AMD AMF, Intel Quick Sync or Apple VideoToolbox encoder is available, export uses it automatically. Otherwise it uses `libx264`. A failed or unavailable hardware encoder safely falls back to CPU mode.
-- The header and export dialog show the active encoder (`h264_nvenc active` or `CPU encoder`).
-- The source archive contains no prebuilt executable, `node_modules`, or installer helper scripts. Build the installer on a clean Windows runner.
-- Existing Style Layer, manual transitions with matching sound, chroma controls, follow-playhead, box selection, selected-to-end selection, gap closing, autosave and automatic output-folder saving remain included.
+Back up saved project JSON and presets before upgrading. Public distribution
+must pass PUBLIC-RELEASE-CHECKLIST.md. Unsigned builds can still be flagged;
+this update does not certify antivirus clearance or replace code signing.
 
-## Build
+## Quick use
+1. Background on V1, person footage on V2; set up Chroma as before.
+2. Creator -> main track V2 -> Story mix or single look -> Apply.
+3. Select a Style segment to fine tune; its lock protects manual changes.
+4. Add transitions manually at cut markers, with optional attached sound.
+5. Media -> Smooth preview -> Prepare preview proxies for slow 4K previews.
+6. Export -> Reliable -> choose folder. Keep power connected and lid open.
 
-Install Node.js 22, then run:
-
-```
-npm ci
-npm test
-npm run dev
-npm run build
-npm run dist:win
-```
-
-`npm run dist:win` creates `release/RanCut-0.4.7-Setup.exe` and never publishes a GitHub release. The included GitHub Actions workflow runs the tests and uploads the installer and web build as separate artifacts. Do not rerun an old failed workflow attempt; run the workflow from the current `main` commit.
-
-## GPU behaviour
-
-The app does not require an RTX card. It tests the FFmpeg encoders that are actually usable on the machine. RTX systems with a working NVIDIA driver normally show `h264_nvenc`; systems without it use CPU encoding. The canvas label separately shows NVIDIA, AMD or Intel. Electron requests the high-performance GPU, but Windows Graphics Settings and the driver retain final control. If WebCodecs does not expose a supported H.264 configuration, the app safely uses the JPEG fallback.
-
-## Safety and distribution
-
-The source archive is the safer reviewable package and has no executable payload. Windows installers built without an Authenticode certificate can trigger SmartScreen or antivirus heuristics. Do not restore an installer that Defender quarantines. For public distribution, build from a clean runner, scan the resulting executable, sign it with a trusted certificate and submit a suspected false positive to Microsoft before sharing it.
-
-## Creator workflow
-
-Creator includes a reusable Style adjustment layer for cut-to-cut normal, close-up, left/right and animated zoom framing across the complete scene, including the keyed person and background. Style presets can be saved/imported and individual segments can be edited or locked. Transitions remain manual and separate from Style: paper, whoosh, shutter, glitch and fade can carry a matching sound effect. Custom transition audio is limited to 5 seconds.
-
-The timeline supports linked A/V ripple editing, automatic playhead following, box selection, multi-clip group moves, selection from a clip to the end, bounded empty-gap deletion, actual gain-scaled waveforms and fullscreen exit. Export saves MP4 automatically to the remembered output directory and reports progress, cancellation and errors.
-
-## Validation
-
-37 automated tests pass with FFmpeg, including direct H.264 stream input, real MP4 export, legacy single-JPEG input, batched JPEG input, raw-frame orientation, output-folder retention, cancellation cleanup, Style/transition data and timeline operations. Production web build passes. Browser WebCodecs availability, Windows installer execution, Defender scanning, actual discrete-GPU assignment and long 4K workloads must still be checked on Windows.
+## Validation and limits
+See TEST-REPORT.md. Browser visual testing and Windows/RTX/installer testing
+could not be completed here. DOM interaction tests use a simulated DOM and mocked renderer; they do not
+replace real browser/GPU or installer testing. This is not a zero-bug guarantee or a fully
+cleared public release. No captions, cloud accounts or heavy AI modules added.

@@ -1,0 +1,46 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';import {createServer} from 'node:http';
+import {mkdtemp,rm,readFile,stat} from 'node:fs/promises';import {spawnSync} from 'node:child_process';import {existsSync} from 'node:fs';import os from 'node:os';import path from 'node:path';
+import {directH264Config,sourceForRender} from '../src/export-config.js';import {exportDirectFrames} from '../src/direct-export.js';import {createApi} from '../server.mjs';
+import * as T from '../src/timeline.js';import * as C from '../src/creator.js';
+const require=createRequire(import.meta.url),createPower=require('../desktop-power.cjs'),ffmpeg=process.env.RANCUT_FFMPEG||require('ffmpeg-static');
+function fixture(){let p=T.emptyProject();p.media=[{id:'v',name:'v',type:'video',duration:12}];p=T.addMediaClip(p,'v','V1',0);p=T.splitClips(p,p.clips[0].id,4);p=T.splitClips(p,p.clips.find(c=>c.trackId==='V1'&&c.start===4).id,8);return p;}
+test('direct config remains an object; unsupported encoder falls back',async()=>{const cfg=await directH264Config(3840,2160,30,'High',{isConfigSupported:async config=>({supported:true,config})});assert.equal(cfg.width,3840);assert.equal(cfg.avc.format,'annexb');assert.equal(await directH264Config(3840,2160,30,'High',{isConfigSupported:async()=>({supported:false})}),null);});
+test('proxy is preview-video only: exact export and audio use original source',()=>{const m={url:'original',proxyUrl:'proxy'};assert.equal(sourceForRender(m).url,'proxy');assert.equal(sourceForRender(m,{exact:true}),m);assert.equal(sourceForRender(m,{audio:true}),m);assert.equal(sourceForRender(null),null);});
+test('sleep blocker is idempotent and releases cleanly on success/cancel',()=>{let started=0,stopped=0;const p=createPower({start:kind=>{assert.equal(kind,'prevent-display-sleep');started++;return 0;},isStarted:id=>id===0,stop:id=>{assert.equal(id,0);stopped++;}});p.start();p.start();assert.equal(started,1);p.release();p.release();assert.equal(stopped,1);assert.equal(p.active(),false);});
+test('scoped Creator Style preserves other segments, locked framing and footage',()=>{const p=C.applyStyle(fixture(),'V1',C.builtInStyle,12),source=p.clips.filter(c=>c.trackId==='V1');const untouched=p.clips.filter(c=>c.kind==='adjustment'&&c.start!==4);const q=C.applyStyle(p,'V1',{...C.builtInStyle,shots:[C.builtInStyle.shots[1]]},4,{ids:[source[1].id]});for(const c of untouched)assert.deepEqual(q.clips.find(x=>x.id===c.id),c);for(const c of source)assert.deepEqual(q.clips.find(x=>x.id===c.id),c);assert.equal(q.clips.find(c=>c.kind==='adjustment'&&c.start===4).name,'Close up');T.validate(q);});
+test('scoped Style on a new project only creates selected cut segments',()=>{const p=fixture(),ids=p.clips.filter(c=>c.trackId==='V1'&&c.start>=4).map(c=>c.id);const q=C.applyStyle(p,'V1',C.builtInStyle,1,{ids});assert.deepEqual(q.clips.filter(c=>c.kind==='adjustment').map(c=>c.start),[4,8]);});
+test('direct packets are bounded, ordered, timestamped and frame resources closed',async()=>{const times=[],sent=[];let closed=0,encoderClosed=false;class Frame{constructor(canvas,cfg){times.push(cfg.timestamp);}close(){closed++;}}class Encoder{constructor(cb){this.cb=cb;}configure(c){assert.equal(c.width,64);}encode(){this.cb.output({byteLength:4,copyTo:a=>a.set([0,0,0,1])});}async flush(){}close(){encoderClosed=true;}}
+ await exportDirectFrames({config:{width:64},frames:19,fps:30,canvas:{},draw:async()=>{},send:async(start,count,b)=>sent.push([start,count,b.size]),Encoder,Frame});assert.deepEqual(sent,[[0,8,32],[8,8,32],[16,3,12]]);assert.equal(times[18],600000);assert.equal(closed,19);assert(encoderClosed);
+});
+test('direct cancellation closes encoder without posting packets',async()=>{const controller=new AbortController();controller.abort();let closed=false;class Encoder{configure(){}close(){closed=true;}}await assert.rejects(()=>exportDirectFrames({config:{},frames:2,fps:30,signal:controller.signal,Encoder}),/cancelled/);assert(closed);});
+test('real proxy downsizes video, supports seeking and preserves original bytes', {skip:!ffmpeg||!existsSync(ffmpeg)},async()=>{const temp=await mkdtemp(path.join(os.tmpdir(),'rancut-proxy-test-'));let api,server;
+ try{const source=path.join(temp,'source.mp4');const generated=spawnSync(ffmpeg,['-v','error','-f','lavfi','-i','testsrc2=size=1920x1080:rate=30','-t','0.5','-c:v','libx264','-preset','ultrafast','-threads','2',source]);assert.equal(generated.status,0,generated.stderr?.toString());const original=await readFile(source);
+ api=await createApi({ffmpeg,exportDir:path.join(temp,'exports'),settingsPath:path.join(temp,'settings.json')});server=createServer(api.middleware);await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
+ const native=await api.registerLocalFile(source);let r=await fetch(base+native.url,{headers:{Range:'bytes=0-31'}});assert.equal(r.status,206);assert.equal((await r.arrayBuffer()).byteLength,32);
+ r=await fetch(base+'/api/proxy',{method:'POST',headers:{'X-RanCut':'1'},body:JSON.stringify({id:native.id,height:720})});const job=await r.json();assert.equal(r.status,200);let result;for(let i=0;i<200;i++){result=await(await fetch(base+'/api/proxy/'+job.key)).json();if(['ready','failed'].includes(result.state))break;await new Promise(r=>setTimeout(r,20));}assert.equal(result.state,'ready',result.error);
+ const proxy=Buffer.from(await(await fetch(base+result.url)).arrayBuffer());const probe=spawnSync(ffmpeg,['-v','info','-i','pipe:0','-f','null','-'],{input:proxy});assert.equal(probe.status,0);assert.match(probe.stderr.toString(),/1280x720/);assert.deepEqual(await readFile(source),original);
+ r=await fetch(base+result.url,{headers:{Range:'bytes=999999999-'}});assert.equal(r.status,416);
+ }finally{if(server){server.closeAllConnections();await new Promise(r=>server.close(r));}await api?.cleanup();await rm(temp,{recursive:true,force:true});}
+});
+test('finite H264 packets export a real MP4 and reject reordered input',{skip:!ffmpeg||!existsSync(ffmpeg)},async()=>{const temp=await mkdtemp(path.join(os.tmpdir(),'rancut-packet-test-'));const api=await createApi({ffmpeg,exportDir:temp,settingsPath:path.join(temp,'settings.json')}),server=createServer(api.middleware);await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/api/';
+ const post=(url,data,binary=false)=>fetch(base+url,{method:'POST',headers:{'X-RanCut':'1'},body:binary?data:JSON.stringify(data)});
+ try{const stream=spawnSync(ffmpeg,['-v','error','-f','lavfi','-i','color=red:s=64x64:r=30','-frames:v','6','-c:v','libx264','-threads','1','-f','h264','-']);assert.equal(stream.status,0);
+ const job=await(await post('export',{width:64,height:64,fps:30,frames:6,frameFormat:'h264',quality:'Good',audio:[]})).json();
+ assert.equal((await post('export/'+job.id+'/encoded-chunk?start=1&count=6',stream.stdout,true)).status,422);
+ assert.equal((await post('export/'+job.id+'/encoded-chunk?start=0&count=6',stream.stdout,true)).status,200);
+ await post('export/'+job.id+'/finish',{});let state;for(let i=0;i<100;i++){state=await(await fetch(base+'export/'+job.id+'/status')).json();if(['complete','failed'].includes(state.state))break;await new Promise(r=>setTimeout(r,20));}assert.equal(state.state,'complete',state.error);assert((await stat(state.savedPath)).size>1000);
+ const check=spawnSync(ffmpeg,['-v','error','-i',state.savedPath,'-f','null','-']);assert.equal(check.status,0);
+ }finally{server.closeAllConnections();await new Promise(r=>server.close(r));await api.cleanup();await rm(temp,{recursive:true,force:true});}
+});
+
+test('4K compatibility export produces a decodable 3840x2160 MP4',{skip:!ffmpeg||!existsSync(ffmpeg)},async()=>{
+ const temp=await mkdtemp(path.join(os.tmpdir(),'rancut-4k-test-'));const api=await createApi({ffmpeg,exportDir:temp,settingsPath:path.join(temp,'settings.json')}),server=createServer(api.middleware);await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/api/';
+ const post=(url,data,binary=false)=>fetch(base+url,{method:'POST',headers:{'X-RanCut':'1'},body:binary?data:JSON.stringify(data)});
+ try{const image=spawnSync(ffmpeg,['-v','error','-f','lavfi','-i','color=blue:s=3840x2160','-frames:v','1','-threads','1','-c:v','mjpeg','-f','image2pipe','-'],{maxBuffer:32*1024*1024});assert.equal(image.status,0);
+ const job=await(await post('export',{width:3840,height:2160,fps:30,frames:3,frameFormat:'jpeg',quality:'High',audio:[],encoder:'cpu'})).json();
+ for(let i=0;i<3;i++)assert.equal((await post('export/'+job.id+'/frame?index='+i,image.stdout,true)).status,200);
+ await post('export/'+job.id+'/finish',{});let state;for(let i=0;i<200;i++){state=await(await fetch(base+'export/'+job.id+'/status')).json();if(['complete','failed'].includes(state.state))break;await new Promise(r=>setTimeout(r,25));}assert.equal(state.state,'complete',state.error);
+ const checked=spawnSync(ffmpeg,['-v','info','-i',state.savedPath,'-f','null','-']);assert.equal(checked.status,0);assert.match(checked.stderr.toString(),/3840x2160/);
+ }finally{server.closeAllConnections();await new Promise(r=>server.close(r));await api.cleanup();await rm(temp,{recursive:true,force:true});}
+});

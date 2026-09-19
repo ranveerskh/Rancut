@@ -1,3 +1,4 @@
+import {sourceForRender} from './export-config.js';
 import {motionAt} from './scene-core.js';
 import {transitionEvents,withTransitionAudio} from './creator.js';
 import {soundRuntime} from './sounds.js';
@@ -52,7 +53,7 @@ export class Renderer{
    const transition=transitionEvents(p).find(v=>t>=v.start&&t<v.start+v.duration);p=withTransitionAudio(p);
    const active=activeAt(p,t),sources=new Map(),visible=p.tracks.filter(x=>x.type!=='audio'&&!x.hidden).slice().reverse();
    const used=new Set();
-   for(const c of active){const tr=p.tracks.find(x=>x.id===c.trackId);if(!tr)continue;const a=tr.type==='audio';if(exact&&a)continue;if(a?tr.muted:tr.hidden)continue;if(c.kind==='adjustment')continue;used.add((a?'a:':'v:')+c.trackId);const meta=p.media.find(m=>m.id===c.mediaId),m=meta?.sound?soundRuntime(meta):media.find(m=>m.id===c.mediaId);sources.set(c.id,await this.source(c,m,t,play,a,fast));}
+   for(const c of active){const tr=p.tracks.find(x=>x.id===c.trackId);if(!tr)continue;const a=tr.type==='audio';if(exact&&a)continue;if(a?tr.muted:tr.hidden)continue;if(c.kind==='adjustment')continue;used.add((a?'a:':'v:')+c.trackId);const meta=p.media.find(m=>m.id===c.mediaId),m=meta?.sound?soundRuntime(meta):media.find(m=>m.id===c.mediaId);sources.set(c.id,await this.source(c,sourceForRender(m,{exact,audio:a}),t,play,a,fast));}
    for(const [k,e] of this.pool)if(!used.has(k)){e.el.pause();if(k.startsWith('a:soundtrack_')){e.el.removeAttribute('src');e.el.load();e.node?.disconnect();e.gain?.disconnect();this.pool.delete(k);}}
    const w=Math.round(width/2)*2,h=Math.round((w*p.height/p.width)/2)*2;this.resize(w,h);const g=this.gl;g.viewport(0,0,w,h);g.useProgram(this.program);g.activeTexture(g.TEXTURE0);let target=0;g.bindFramebuffer(g.FRAMEBUFFER,this.targets[target].fbo);g.clearColor(0,0,0,0);g.clear(g.COLOR_BUFFER_BIT);
    for(const tr of visible){const c=active.find(c=>c.trackId===tr.id);if(!c)continue;this.uniforms(c.kind==='adjustment'?{...c.fx,transform:motionAt(c,t)}:c.fx);
@@ -66,5 +67,6 @@ export class Renderer{
  captureRGBA(){const size=this.canvas.width*this.canvas.height*4;if(this.frameBytes?.length!==size)this.frameBytes=new Uint8Array(size);this.gl.readPixels(0,0,this.canvas.width,this.canvas.height,this.gl.RGBA,this.gl.UNSIGNED_BYTE,this.frameBytes);if(this.gl.getError()!==this.gl.NO_ERROR)throw Error('GPU frame read failed. Try a smaller export resolution.');return this.frameBytes;}
  captureJPEG(quality=.96){return new Promise((resolve,reject)=>this.canvas.toBlob(blob=>blob?resolve(blob):reject(Error('Could not compress the export frame.')),'image/jpeg',quality));}
  sample(clip){const e=this.pool.get('v:'+clip.trackId);if(!e||e.clip!==clip.id||e.el.readyState<2)return null;const c=document.createElement('canvas');c.width=640;c.height=Math.round(640*e.el.videoHeight/e.el.videoWidth);c.getContext('2d').drawImage(e.el,0,0,c.width,c.height);return c;}
+ resetMedia(){this.pause();for(const e of this.pool.values()){e.el.removeAttribute('src');e.el.load();e.node?.disconnect();e.gain?.disconnect();}this.pool.clear();this.images.clear();}
  dispose(){this.disposed=true;this.pause();for(const e of this.pool.values()){e.el.removeAttribute('src');e.el.load();e.node?.disconnect();e.gain?.disconnect();}this.audio?.ctx.close();this.pool.clear();const g=this.gl;for(const x of this.targets){g.deleteTexture(x.tex);g.deleteFramebuffer(x.fbo);}g.deleteTexture(this.texture);g.deleteProgram(this.program);g.deleteBuffer(this.buffer);}
 }

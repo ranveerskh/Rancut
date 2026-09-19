@@ -13,14 +13,20 @@ export function validateStyle(v){
  for(const s of v.shots)if(typeof s.name!=='string'||s.name.length>80||!validPose(s.from)||!validPose(s.to))throw Error('Style scale must be 100–180%; X/Y must be −30…30.');
  return structuredClone(v);
 }
-export function applyStyle(p,sourceTrack,preset,seed=1){
+export function applyStyle(p,sourceTrack,preset,seed=1,options={}){
  preset=validateStyle(preset);const source=p.tracks.find(t=>t.id===sourceTrack);
  if(source?.type!=='video')throw Error('Choose your main video track.');
- const cuts=p.clips.filter(c=>c.trackId===sourceTrack).sort((a,b)=>a.start-b.start);if(!cuts.length)throw Error('Add clips to the main track first.');
+ const allCuts=p.clips.filter(c=>c.trackId===sourceTrack);
+ const allowed=options.ids?new Set(options.ids):null;
+ const cuts=allCuts.filter(c=>!allowed||allowed.has(c.id)).sort((a,b)=>a.start-b.start);if(!cuts.length)throw Error('Add clips to the main track first.');
  let q=structuredClone(p),track=q.tracks.find(t=>t.creatorStyle);
  if(track?.locked)throw Error('Unlock the Style track first.');
  if(!track){q=T.addTrack(q,'adjustment');track=q.tracks[0];track.creatorStyle=true;track.name='Style';}
- const old=q.clips.filter(c=>c.trackId===track.id),keep=old.filter(c=>c.styleLocked);
+ const old=q.clips.filter(c=>c.trackId===track.id);
+ const touches=c=>cuts.some(x=>c.start<T.end(x)-T.EPS&&T.end(c)>x.start+T.EPS);
+ const preserved=allowed?old.filter(c=>!touches(c)):[];
+ const keep=old.filter(c=>c.styleLocked&&(!allowed||touches(c)));
+ if(allowed&&old.some(c=>touches(c)&&!cuts.some(x=>Math.abs(x.start-c.start)<T.EPS&&Math.abs(x.duration-c.duration)<T.EPS)))throw Error('Style boundaries changed. Apply to all cuts first, or remove the mismatched Style segment.');
  let last=-1,n=seed>>>0;
  const clips=cuts.map(c=>{
    const fixed=keep.find(s=>Math.abs(s.start-c.start)<T.EPS&&Math.abs(s.duration-c.duration)<T.EPS);if(fixed)return fixed;
@@ -28,7 +34,7 @@ export function applyStyle(p,sourceTrack,preset,seed=1){
    const shot=preset.shots[index];return {id:T.uid('style'),kind:'adjustment',mediaId:null,trackId:track.id,name:shot.name,start:c.start,duration:c.duration,sourceIn:0,linkedId:null,fx:{...T.fxDefault(),scene:{from:shot.from,to:shot.to,span:c.duration,offset:0}},styleLocked:false};
  });
  if(keep.some(c=>!clips.includes(c)))throw Error('A locked Style segment no longer matches the main cuts. Unlock it before regenerating.');
- q.clips=[...q.clips.filter(c=>c.trackId!==track.id),...clips];q.creatorPreset=preset;q.creatorSource=sourceTrack;
+ q.clips=[...q.clips.filter(c=>c.trackId!==track.id),...preserved,...clips];q.creatorPreset=preset;q.creatorSource=sourceTrack;
  return T.finish(p,q);
 }
 export function captureStyle(p,name='My Style'){
