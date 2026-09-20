@@ -1,7 +1,8 @@
-# RanCut 0.5.3 Preview
-71/71 automated tests and production build passed.
-Creator workflow, crop/framing and timeline repeat tools are implemented; see README.md and TEST-REPORT.md.
-Windows/RTX/real-browser/long-project verification is pending.
-The source ZIP includes the GitHub Windows installer workflow, not a built EXE.
-Reliable export stays default. Direct export remains experimental.
-Subscriptions, ads, live feedback and release hosting are not connected.
+# RanCut 0.5.6 Preview
+
+Original supplied artwork and restrained navy/purple theme. Complete source update with GitHub Windows installer workflow.
+83 automated tests and production build passed.
+18 actual shader frames passed native Mesa/EGL checks; contact sheet in qa/framing.
+Browser visual layout and Windows/RTX/installer checks are not verified here.
+Reliable export remains default. No speed benchmark or antivirus clearance claimed.
+See README.md and TEST-REPORT.md.

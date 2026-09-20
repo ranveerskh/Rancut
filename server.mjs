@@ -49,7 +49,7 @@ export async function createApi({ffmpeg,exportDir,settingsPath}={}){
    }
    if(req.method==='GET'&&parts[1]==='output')return json(res,200,{directory:output.get()});
    if(req.method==='POST'&&parts[1]==='output'){const cfg=JSON.parse(await body(req));if([...jobs.values()].some(j=>['frames','finishing'].includes(j.state)))throw Error('Wait for the current export before changing folder.');return json(res,200,{directory:await output.set(cfg.directory)});}
- if(req.method==='GET'&&parts[1]==='health')return json(res,200,{ffmpeg:!!ffmpeg,version:'0.5.3',encoder:encoderInfo.selected,hardwareEncoders:encoderInfo.hardware,encoderMode:encoderInfo.mode,gpu:encoderInfo.gpu,ffmpegSource:encoderInfo.ffmpegSource});
+ if(req.method==='GET'&&parts[1]==='health')return json(res,200,{ffmpeg:!!ffmpeg,version:'0.5.6',encoder:encoderInfo.selected,hardwareEncoders:encoderInfo.hardware,encoderMode:encoderInfo.mode,gpu:encoderInfo.gpu,ffmpegSource:encoderInfo.ffmpegSource});
    if(req.method==='POST'&&parts[1]==='media'){
     const id=randomUUID(),dest=path.join(root,id+'.media');let size=0;const stream=createWriteStream(dest);
     try{req.on('data',b=>{size+=b.length;if(size>MAX_FILE)req.destroy(Error('File exceeds 50 GB.'));});await pipeline(req,stream);}catch(e){await rm(dest,{force:true});throw e;}
@@ -110,7 +110,7 @@ export async function createApi({ffmpeg,exportDir,settingsPath}={}){
    }
    if(req.method==='GET'&&parts[3]==='status')return json(res,200,{state:j.state,error:j.error,received:j.received,savedPath:j.state==='complete'?j.finalPath:null,outputDirectory:j.outputDirectory});
    if(req.method==='GET'&&parts[3]==='download'){
-    if(j.state!=='complete')throw Error('Export is not ready.');res.setHeader('Content-Type','video/mp4');res.setHeader('Content-Disposition','attachment; filename="RanCut-v0.5.3.mp4"');res.setHeader('Content-Length',(await stat(j.output)).size);await pipeline(createReadStream(j.output),res);return;
+    if(j.state!=='complete')throw Error('Export is not ready.');res.setHeader('Content-Type','video/mp4');res.setHeader('Content-Disposition','attachment; filename="RanCut-v0.5.6.mp4"');res.setHeader('Content-Length',(await stat(j.output)).size);await pipeline(createReadStream(j.output),res);return;
    }
    return next();
   }catch(e){if(!res.headersSent)json(res,422,{error:e.message||'Local processing failed.'});else res.destroy();}

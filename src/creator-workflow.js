@@ -1,9 +1,13 @@
 import * as T from './timeline.js';
 import * as C from './creator.js';
-export const creatorStyles=[
- {format:'rancut-style',version:1,name:'Simple',shots:[{name:'Normal',from:{scale:100,x:0,y:0},to:{scale:100,x:0,y:0}},{name:'Gentle zoom',from:{scale:102,x:0,y:0},to:{scale:108,x:0,y:0}},{name:'Soft close',from:{scale:108,x:2,y:0},to:{scale:108,x:2,y:0}}]},
- {format:'rancut-style',version:1,name:'Dynamic',shots:[{name:'Normal',from:{scale:100,x:0,y:0},to:{scale:105,x:0,y:0}},{name:'Punch in',from:{scale:135,x:0,y:0},to:{scale:135,x:0,y:0}},{name:'Moving left',from:{scale:120,x:10,y:0},to:{scale:132,x:-16,y:0}},{name:'Moving right',from:{scale:120,x:-10,y:0},to:{scale:132,x:16,y:0}},{name:'Slow zoom',from:{scale:110,x:0,y:0},to:{scale:140,x:0,y:0}}]}
-];
+export const creatorStyles=['Simple','Dynamic'].map(name=>({format:'rancut-style',version:1,name,shots:[
+ {name:'Normal',from:{scale:100,x:0,y:0},to:{scale:100,x:0,y:0}},
+ {name:'Close-up',from:{scale:name==='Simple'?112:130,x:0,y:0},to:{scale:name==='Simple'?112:130,x:0,y:0}},
+ {name:'Slow zoom in',from:{scale:100,x:0,y:0},to:{scale:name==='Simple'?112:130,x:0,y:0}},
+ {name:'Slow zoom out',from:{scale:name==='Simple'?112:130,x:0,y:0},to:{scale:100,x:0,y:0}},
+ {name:'Left framing',from:{scale:118,x:-10,y:0},to:{scale:118,x:-10,y:0}},
+ {name:'Right framing',from:{scale:118,x:10,y:0},to:{scale:118,x:10,y:0}}
+] .map(s=>({...s,cameraMode:s.name}))}));
 export function removeTrack(p,id){const tr=p.tracks.find(t=>t.id===id);if(!tr)throw Error('Track no longer exists.');if(tr.locked)throw Error('Unlock this track first.');const removed=new Set(p.clips.filter(c=>c.trackId===id).map(c=>c.id));const clips=p.clips.filter(c=>!removed.has(c.id)).map(c=>removed.has(c.linkedId)?{...c,linkedId:null}:c);const tracks=p.tracks.filter(t=>t.id!==id).map(t=>t.duckAgainst===id?{...t,duckAgainst:null}:t);return T.finish(p,{...p,tracks,clips,creatorSource:p.creatorSource===id?undefined:p.creatorSource});}
 export function setAudioGain(p,{scope='clip',clipId,ids=[],trackId,db}){if(!Number.isFinite(db)||db< -60||db>12)throw Error('Gain must be −60 to +12 dB.');const anchor=p.clips.find(c=>c.id===clipId);const audioAnchor=p.tracks.find(t=>t.id===anchor?.trackId)?.type==='audio'?anchor:p.clips.find(c=>c.id===anchor?.linkedId);trackId=trackId||audioAnchor?.trackId;
  if(scope==='track'){const tr=p.tracks.find(t=>t.id===trackId);if(tr?.type!=='audio'||tr.locked)throw Error('Select an unlocked audio track.');return T.finish(p,{...p,tracks:p.tracks.map(t=>t.id===trackId?{...t,gainDb:db}:t)});}

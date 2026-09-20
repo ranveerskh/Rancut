@@ -1,60 +1,70 @@
-# RanCut 0.5.3 validation
-Date: 2026-09-20. Linux, Node 24, system FFmpeg CPU. Windows CI uses Node 22.
+# RanCut 0.5.6 validation
+
+Date: 2026-09-20. Linux, Node 24, system FFmpeg CPU. Windows CI targets Node 22.
 
 ## Executed
-- 76 tests passed; 0 failed; 0 skipped.
-- Production Vite build passed (1606 modules).
-- Electron and preload syntax checks passed.
-- Version, lockfile and runtime-package checks passed.
-- Existing icon retained unchanged.
-- No production dependency was added for this update.
 
-## 0.5.3 coverage added
+- 83 automated tests: zero failures and zero skips.
+- Vite production build and Electron/preload/server syntax checks.
+- Version agreement across package, lockfile, header, Home, Help, server and workflow.
+- No production dependency added. moderngl is an optional QA-only Python tool.
 
-- Base-zoom geometry keeps the upper edge stable and allows bottom/belly crop.
-- Protected head rectangle remains in frame at endpoints and intermediate motion times.
-- Style regeneration retains locked edits and leaves source clips unchanged.
-- Simulated DOM frame chooser: seek, preview replacement, crop preserved, failed seek blocks Apply, successful retry recovers.
-- Simulated full-editor toolbar: extra actions inside More, close after selecting an action.
-- Versions synchronized across header, Help, Home, package, server and workflow.
-- Full test suite, Vite production build, Electron/preload/server syntax checks passed.
+## Brand update validation
 
-## 0.5.2 coverage added
+- Original JPEG checksum matches the supplied upload exactly.
+- Desktop PNG decoded RGB pixels match the original JPEG; ICO uses proportional size conversion.
+- JSX, CSS, static assets and desktop MIME routing build successfully.
+- Full regression suite rerun. Native shader report is retained from the previous release;
+  rendering logic did not change. No new browser visual/Windows icon test claimed.
 
-- Clean-edge shader semantics: cropped pixels are transparent while source UV coordinates stay unchanged.
-- Frame-preview wiring: dialogs use decoded source frames rather than a WebGL canvas capture.
+## Creator workspace coverage
 
-## 0.5.1 coverage added
-- Clip duplication/repeat keeps linked A/V together and trims the final repeat.
-- Still image/adjustment extend-to-end, validated picture crop, and subject-frame data.
-- Auto Edit carries optional crop and a manual protected-subject frame into its editable copy.
-- DOM workflow covers the new Crop & framing Auto Edit step.
+- 16:9 box/pose roundtrips at boundaries, nested frame validation and clamping.
+- Selected close-up rectangle retained at endpoints and intermediate camera poses.
+- Visible scale change in both zoom directions; gentle versus Dynamic strength.
+- Steady short shots; six distinct balanced Dynamic shot choices.
+- Style scope and manually locked segments, untouched source mask, JSON persistence.
+- Captured/imported absolute presets retain their exact saved poses.
+- Auto Edit and Creator share camera calculations; skipping motion keeps the base.
+- Shared framing simulated DOM: source-time seek, box drag, zoom control,
+  frame preservation, mask refresh at chosen time, error/retry and preview mode.
+- Full-editor simulated DOM: direct toolbar actions; no More/Clear/Delete toolbar.
+- Trash simulated DOM: selection, cancelled deletion, confirmed deletion and reopen.
+- Atomic batch restore/delete preserves active projects; legacy recovery tombstone
+  prevents permanently deleted recovery from reappearing on next startup.
 
-## Coverage added
-- Auto Edit green/regular modes; skip options; invalid or mismatched sources;
-  peak-safe voice gain; silence padding; source immutability; repeating background
-  and BGM; linked main A/V; logo exclusion/inclusion; Style and cut-attached sound.
-- Track removal preserves source media and unlinks surviving clips. Locked
-  counterparts remain protected.
-- Clip / selected / track gain, preview/export effective-gain parity.
-- BGM interval ducking, export splitting and voice mute behaviour.
-- Conservative/aggressive short-leftover candidates using source offsets.
-- Both built-in Style presets and explicit transition replacement.
-- Simulated DOM integration: edit/reset/save/apply Style, + transition modal,
-  full-video/no-sound settings, full-track gain, Auto Edit review/generate,
-  separate project persistence, track × and Undo.
-  GPU, native reconnect, green sample and audio analysis are mocked in this DOM
-  test. Pure processing tests use fixture analysis; these are not real footage QA.
+## Actual rendered image checks
 
-## Retained tests
-Project Home/recovery; linked ripple; cuts/gaps/selection; waveform math;
-Style/transition presets; existing FFmpeg MP4/audio export tests; proxy generation;
-short synthetic 4K encode/decode; Direct encoder packet/cancel logic and sleep
-blocker lifecycle mocks. These are NOT long-video RTX benchmarks.
+scripts/render-framing-fixture.mjs extracts the application vertex/fragment shader
+and JS motion poses. scripts/render-framing-check.py compiles that shader with
+only GLSL API syntax adaptation on native Mesa/EGL (llvmpipe).
 
-## Not verified here
-Real Windows installer/upgrade/uninstall, native dialogs, real browser visual
-layout/mouse scaling, RTX/WebCodecs/chroma visual quality, speech/cough accuracy,
-long-project audio sync and export endurance. Browser binary download previously
-timed out. No Windows or real browser test is claimed.
-No signing, antivirus clearance, live subscriptions/ads or public-release approval.
+18 PNG frames cover six shots at start, midpoint and end. Pixel assertions check:
+proportional circular head; retained headroom; no transparent outer edge;
+correct JS-to-shader positions; visible zoom-in/out; source mask leaving interior
+pixels unchanged. The contact sheet was visually inspected. Results and PNGs
+are in qa/framing/. These are actual shader renders, using synthetic media.
+
+To reproduce (optional QA packages: moderngl, Pillow, numpy):
+```sh
+node scripts/render-framing-fixture.mjs /tmp/rancut-framing.json
+python scripts/render-framing-check.py /tmp/rancut-framing.json qa/framing
+```
+
+## Retained coverage
+
+Linked timeline edits, locks, selection/gaps, track deletion, gain/waveform math,
+project catalog/recovery, presets, transition sound, real short CPU FFmpeg MP4
+exports and audio, proxies, synthetic 4K encode/decode, cancellation/packet ordering,
+and mocked sleep-blocker lifecycle.
+
+## Not verified
+
+A Chromium binary could not be downloaded in this environment (network timeouts).
+Simulated DOM tests do not prove real-browser layout, actual mouse scaling or
+browser media decoding. Native shader testing does not replace those tests.
+
+Windows installer/upgrade/uninstall, native dialogs, RTX/WebCodecs, real footage
+chroma quality, long-video audio sync/export endurance and sleep/lid behavior on
+the user's laptop remain unverified. No signing, antivirus clearance, subscription,
+ad service or public-release approval is claimed.

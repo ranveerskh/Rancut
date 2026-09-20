@@ -17,7 +17,8 @@ export function buildAutoEdit(source,options,analysis){
  loop(options.backgroundId,'V1');
  if(options.bgmId){p.tracks.push({id:'A2',type:'audio',name:'BGM',gainDb:options.bgmDb??-24,duckAgainst:options.duck?'A1':null,duckDb:-10});loop(options.bgmId,'A2');}
  if(options.logoId){const logo=media(options.logoId);if(logo?.type!=='image')throw Error('Logo must be an image.');p.tracks.unshift({id:'V3',type:'video',name:'Logo',fixedOverlay:true});loop(options.logoId,'V3',{transform:{scale:18,x:96,y:96,opacity:100}});}
- if(options.style&&options.style!=='none')p=C.applyStyle(p,'V2',creatorStyles[options.style==='dynamic'?1:0],options.seed??42,{includeLogo:!!options.includeLogo,subject:options.subject,baseScale:options.baseScale??108});
+ if(options.style&&options.style!=='none')p=C.applyStyle(p,'V2',creatorStyles[options.style==='dynamic'?1:0],options.seed??42,{includeLogo:!!options.includeLogo,subject:options.subject,baseScale:options.baseScale??108,framing:options.framing});
+ if(options.framing&&(!options.style||options.style==='none'))p=C.applyStyle(p,'V2',{...creatorStyles[0],name:'Base only',shots:[creatorStyles[0].shots[0]]},0,{framing:options.framing,includeLogo:!!options.includeLogo});
  if(options.transition&&options.transition!=='none'&&C.cutPairs(p,'V2').length)p=applyTransitions(p,{trackId:'V2',preset:{...C.transitionPreset(options.transition),sound:!!options.sound,gainDb:options.soundDb??-16},all:true,replace:true});
  const used=new Set(p.clips.map(c=>c.mediaId));p.media=p.media.filter(m=>used.has(m.id));p.creatorSource='V2';return T.validate(p);
 }

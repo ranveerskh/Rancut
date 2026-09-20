@@ -1,5 +1,5 @@
 export const identityPose=()=>({scale:100,x:0,y:0});
-export function validPose(p){return p&&Number.isFinite(p.scale)&&p.scale>=100&&p.scale<=180&&['x','y'].every(k=>Number.isFinite(p[k])&&Math.abs(p[k])<=30);}
+export function validPose(p){return p&&Number.isFinite(p.scale)&&p.scale>=100&&p.scale<=400&&['x','y'].every(k=>Number.isFinite(p[k])&&Math.abs(p[k])<=375);}
 export function motionAt(c,time){
  const m=c.fx?.scene;if(!m)return c.fx?.transform||identityPose();
  let u=Math.max(0,Math.min(1,((time-c.start)+(m.offset||0))/(m.span||c.duration)));

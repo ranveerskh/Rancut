@@ -21,12 +21,12 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
   server=http.createServer((req,res)=>api.middleware(req,res,()=>{
    try{const relative=decodeURIComponent(new URL(req.url,'http://localhost').pathname),root=path.join(__dirname,'dist'),file=path.resolve(root,'.'+(relative==='/'?'/index.html':relative));
     if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end('Not found');return;}
-    const type={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png'}[path.extname(file)]||'application/octet-stream';res.setHeader('Content-Type',type);fs.createReadStream(file).pipe(res);
+    const type={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.jpeg':'image/jpeg','.jpg':'image/jpeg'}[path.extname(file)]||'application/octet-stream';res.setHeader('Content-Type',type);fs.createReadStream(file).pipe(res);
    }catch{res.writeHead(400);res.end('Invalid path');}
   }));
   // Stable origin retains project recovery and preset storage between launches.
   await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(5174,'127.0.0.1',resolve);});
-  window=new BrowserWindow({width:1440,height:960,minWidth:950,minHeight:650,title:'RanCut',icon:path.join(__dirname,'assets/icon.png'),backgroundColor:'#080a0e',webPreferences:{preload:path.join(__dirname,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true,partition:'persist:rancut',backgroundThrottling:false}});
+  window=new BrowserWindow({width:1440,height:960,minWidth:950,minHeight:650,title:'RanCut',icon:path.join(__dirname,'assets/icon.png'),backgroundColor:'#0b0e18',webPreferences:{preload:path.join(__dirname,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true,partition:'persist:rancut',backgroundThrottling:false}});
   window.setMenuBarVisibility(false);window.webContents.setWindowOpenHandler(()=>({action:'deny'}));window.webContents.on('will-navigate',(event,url)=>{if(!url.startsWith('http://127.0.0.1:5174/'))event.preventDefault();});
   window.webContents.on('will-prevent-unload',event=>event.preventDefault());
   window.on('close',event=>{if(allowClose)return;event.preventDefault();if(waiting)return;waiting=true;window.webContents.send('prepare-close');closeTimer=setTimeout(()=>{waiting=false;dialog.showMessageBox(window,{type:'warning',message:'RanCut has not finished saving. The window has been kept open.',detail:'Save a project file before trying to close again.'});},15000);});

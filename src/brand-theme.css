@@ -1,0 +1,64 @@
+/* Presentation only: no timeline geometry, render filters or animation. */
+:root{--panel:#101522;--line:#293044;--accent:#b59aff;color-scheme:dark}
+body,.app{background:#090d16;color:#e7eaf4}
+.topbar{background:#0d111d;border-color:#293044}
+.brand b,.homeBrand h1{color:#f0edff}
+.brandIcon,.homeBrand img,.helpDialog .aboutIcon{object-fit:contain}
+.brandIcon{width:36px;height:36px;border-radius:6px}
+.homeBrand img{width:64px;height:64px;border-radius:8px}
+.helpDialog .aboutIcon{width:128px;height:auto;border-radius:10px}
+.leftPanel,.inspector{background:#0e1320;border-color:#293044}
+.viewerPanel{background:#090e19}
+.transport,.timelineToolbar,.trackToolbar,.timelineFoot{background:#101522;border-color:#293044}
+.statusBar{background:#111729;color:#bbc4d9}
+.tabs button,.insTabs button{color:#abb5cb}
+.tabs button.active,.insTabs button.active{color:#eee8ff;border-bottom-color:#a780ed;background:#241d3c}
+.topActions>button,.editBtns button,.zoomCtl button{background:#171d2c;border-color:#303950;color:#dce3f4}
+button:hover:not(:disabled){border-color:#8c73bd}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid #b59aff;outline-offset:2px}
+.topActions .exportBtn,.modalActions .primaryExport,.projectHome .primary,.workflowDialog .primary{background:linear-gradient(115deg,#6843ba,#355bb5);color:#fff;border-color:#8b75d0;box-shadow:none}
+.editBtns button.active,.workflowDialog .chosen{background:#302448;color:#efe7ff;border-color:#9876cf}
+.editBtns button.active kbd{background:#211b35;color:#e7dcff;border-color:#64517f}
+.autoEditButton{border-color:#8870bc!important;color:#d5c2ff!important;background:#231c36!important}
+input[type=range],input[type=checkbox],.frameSeek input[type=range]{accent-color:#a783ed}
+.slider input[type=range]{accent-color:#a783ed}
+.saveBadge{color:#c6b4ef}
+.trackLabels,.ruler,.timelineScroller{background:#0c101b;border-color:#293044}
+.lane{background:#0c111c;border-color:#242c3e}
+.lane:nth-of-type(even){background:#101522}
+.lane.audioLane{background:#0c171a}
+.clipBox.video{background:#243e68;border-color:#5277a9}
+.clipBox.image{background:#343d61;border-color:#65749c}
+.clipBox.adjustment{background:#433064;border-color:#9670ca}
+.clipBox.audioTrack{background:#1d463e;border-color:#518575}
+.clipBox.selected{outline-color:#c9a9ff}
+.playhead,.playhead i{background:#c096ff}
+.selectionBox{border-color:#b494ee;background:#a882ed22}
+.cutTarget.hasTransition{background:#46316b;color:#eee4ff;border-color:#a888e0}
+.workflowDialog,.exportModal,.helpDialog{background:#111725;border-color:#35415a;color:#e7eaf4}
+.workflowDialog header,.workflowDialog footer,.modalHead,.modalActions{border-color:#2b354b}
+.workflowDialog button{background:#1a2234;border-color:#3b4863;color:#e4e9f5}
+.workflowDialog .chosen,.workflowDialog .primary{background:#3c2b60;color:#f0e8ff;border-color:#9671d1}
+.creatorCard,.stylePreset,.autoSummary{background:#141d2e;border-color:#35435b}
+.styleIllustration i{background:#b397ed}
+.dynamic .styleIllustration i:nth-child(2){background:#81b7ef}
+.frameSelection{border-color:#c1a0ff}
+.frameSelection>span{background:#241735e8;color:#f0e6ff}
+.frameSelection .frameResize{background:#c1a0ff;border-color:#38224f}
+.autoDivider{background:#2a3247}
+.autoDivider:hover,.autoDivider:focus{background:#a989db}
+.projectHome{background:#0b101c}
+.projectCard{background:#141c2c;border-color:#303d55}
+.projectCard .projectCover{background:linear-gradient(125deg,#29213f,#162842)}
+.projectCover>span{color:#bca0ef}
+.projectHome button:hover:not(:disabled){border-color:#a080d1}
+.projectHome button:focus-visible,.projectHome input:focus-visible{outline-color:#b59aff}
+.trashSelect{background:#20233b}
+.progress i{background:#b49bdf}
+.danger,.projectHome .danger{color:#ff9aa5}
+.clipBox.missingClip{background:#48222e!important;border-color:#df7288!important}
+*{scrollbar-color:#48536c #0d1220}
+*::-webkit-scrollbar-track,*::-webkit-scrollbar-corner{background:#0d1220}
+*::-webkit-scrollbar-thumb{background:#48536c;border-color:#0d1220}
+*::-webkit-scrollbar-thumb:hover{background:#6d7897}
+@media(prefers-reduced-motion:reduce){button{transition:none}}

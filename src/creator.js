@@ -1,3 +1,4 @@
+import {validateFraming,framingShot,shotKinds,shotSequence} from './framing.js';
 import {soundBytes} from './sounds.js';
 import * as T from './timeline.js';
 import {validPose,identityPose,motionAt} from './scene-core.js';
@@ -10,7 +11,8 @@ export const builtInStyle={format:'rancut-style',version:1,name:'Storytelling',s
 ]};
 export function validateStyle(v){
  if(v?.format!=='rancut-style'||v.version!==1||typeof v.name!=='string'||!v.name.trim()||v.name.length>80||!Array.isArray(v.shots)||v.shots.length<1||v.shots.length>20)throw Error('Invalid Style preset.');
- for(const s of v.shots)if(typeof s.name!=='string'||s.name.length>80||!validPose(s.from)||!validPose(s.to))throw Error('Style scale must be 100–180%; X/Y must be −30…30.');
+ for(const s of v.shots)if(typeof s.name!=='string'||s.name.length>80||!validPose(s.from)||!validPose(s.to))throw Error('Style scale must be 100–400%; X/Y must be −375…375.');
+ for(const s of v.shots)if(s.cameraMode&&!shotKinds.includes(s.cameraMode))throw Error('Unknown camera shot.');
  return structuredClone(v);
 }
 // A manual subject frame keeps automated zooms conservative. It is deliberately
@@ -55,13 +57,16 @@ export function applyStyle(p,sourceTrack,preset,seed=1,options={}){
  const keep=old.filter(c=>c.styleLocked&&(!allowed||touches(c)));
  if(allowed&&old.some(c=>touches(c)&&!cuts.some(x=>Math.abs(x.start-c.start)<T.EPS&&Math.abs(x.duration-c.duration)<T.EPS)))throw Error('Style boundaries changed. Apply to all cuts first, or remove the mismatched Style segment.');
  let last=-1,n=seed>>>0;
- const clips=cuts.map(c=>{
+ const framing=options.framing||p.creatorFraming; if(framing){validateFraming(framing);if(p.width/p.height!==16/9)throw Error('Creator framing requires a 16:9 project.');}
+ const names=shotSequence(preset.name,cuts.length);
+ const clips=cuts.map((c,cutIndex)=>{
    const fixed=keep.find(s=>Math.abs(s.start-c.start)<T.EPS&&Math.abs(s.duration-c.duration)<T.EPS);if(fixed)return fixed;
    n=(Math.imul(n,1664525)+1013904223)>>>0;let index=n%preset.shots.length;if(index===last&&preset.shots.length>1)index=(index+1)%preset.shots.length;last=index;
-   const shot=preset.shots[index],subject=options.subject||c.fx?.subject;return {id:T.uid('style'),kind:'adjustment',mediaId:null,trackId:track.id,name:shot.name,start:c.start,duration:c.duration,sourceIn:0,linkedId:null,fx:{...T.fxDefault(),scene:{from:baseStylePose(shot.from,subject,options.baseScale??108),to:baseStylePose(shot.to,subject,options.baseScale??108),span:c.duration,offset:0,includeLogo:!!options.includeLogo,subject:subject?structuredClone(subject):null,subjectSafe:!!subject,baseScale:options.baseScale??108}},styleLocked:false};
+   const relative=preset.shots.some(s=>s.cameraMode);const sequence=preset.name==='Simple'?preset.shots.filter(s=>!['Left framing','Right framing'].includes(s.cameraMode)):preset.shots;
+   const shot=relative?sequence[cutIndex%sequence.length]:preset.shots[index],subject=options.subject||c.fx?.subject;const framed=!!(framing&&shot.cameraMode);const name=shot.name;const poses=framed?framingShot(framing,shot.cameraMode,preset.name==='Simple',c.duration):shot.absolute?{from:shot.from,to:shot.to}:{from:baseStylePose(shot.from,subject,options.baseScale??108),to:baseStylePose(shot.to,subject,options.baseScale??108)};return {id:T.uid('style'),kind:'adjustment',mediaId:null,trackId:track.id,name,start:c.start,duration:c.duration,sourceIn:0,linkedId:null,fx:{...T.fxDefault(),scene:{...poses,framing:framed?structuredClone(framing):null,gentle:preset.name==='Simple',shot:name,span:c.duration,offset:0,includeLogo:!!options.includeLogo,subject:subject?structuredClone(subject):null,subjectSafe:!!subject,baseScale:options.baseScale??108}},styleLocked:false};
  });
  if(keep.some(c=>!clips.includes(c)))throw Error('A locked Style segment no longer matches the main cuts. Unlock it before regenerating.');
- q.clips=[...q.clips.filter(c=>c.trackId!==track.id),...preserved,...clips];q.creatorPreset=preset;q.creatorSource=sourceTrack;
+ q.clips=[...q.clips.filter(c=>c.trackId!==track.id),...preserved,...clips];q.creatorPreset=preset;q.creatorSource=sourceTrack;if(framing)q.creatorFraming=structuredClone(framing);
  return T.finish(p,q);
 }
 export function captureStyle(p,name='My Style'){
@@ -70,7 +75,7 @@ export function captureStyle(p,name='My Style'){
  for(const c of p.clips.filter(c=>c.trackId===track.id).sort((a,b)=>a.start-b.start)){
   if(!c.fx?.scene)continue;
   const pose=t=>{const {scale,x,y}=motionAt(c,t);return {scale,x,y};},from=pose(c.start),to=pose(T.end(c)),key=JSON.stringify([from,to]);
-  if(seen.has(key))continue;seen.add(key);shots.push({name:c.name,from,to});
+  if(seen.has(key))continue;seen.add(key);shots.push({name:c.name,from,to,absolute:true});
  }
  if(shots.length>20)throw Error('This layer has more than 20 distinct framings. Save the project to preserve it exactly.');
  return validateStyle({format:'rancut-style',version:1,name,shots});

@@ -1,0 +1,147 @@
+/* RanCut 0.5.6 UI pass
+   Presentation-only refinements. Editing state, renderer and keyboard actions
+   remain owned by the existing components. */
+
+:root {
+  --ui56-surface-0: #090c14;
+  --ui56-surface-1: #0f1420;
+  --ui56-surface-2: #151b2a;
+  --ui56-surface-3: #1b2233;
+  --ui56-line: rgba(177, 186, 219, .16);
+  --ui56-line-strong: rgba(177, 186, 219, .26);
+  --ui56-text: #f4f5fb;
+  --ui56-muted: #9ca7c1;
+  --ui56-accent: #b69aff;
+  --ui56-accent-2: #7e9dff;
+  --ui56-positive: #85e1bd;
+  --ui56-warning: #ffd37a;
+  --ui56-danger: #ff8b98;
+  --ui56-radius: 9px;
+}
+
+/* The top bar stays compact even when a project has a long filename. */
+.topbar {
+  min-height: 62px;
+  gap: 14px;
+  padding: 9px 14px;
+  background: linear-gradient(180deg, rgba(14, 19, 31, .98), rgba(9, 12, 20, .98));
+  border-bottom: 1px solid var(--ui56-line);
+}
+.brand { min-width: 0; gap: 9px; }
+.brandIcon { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; box-shadow: 0 0 0 1px rgba(182,154,255,.3), 0 5px 18px rgba(0,0,0,.24); }
+.brand b { letter-spacing: -.02em; }
+.brand span { color: var(--ui56-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topActions { min-width: 0; gap: 6px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.topActions::-webkit-scrollbar { display: none; }
+.topActions button { flex: 0 0 auto; min-height: 34px; border-radius: 8px; border: 1px solid var(--ui56-line); background: rgba(28, 35, 53, .74); color: var(--ui56-text); transition: background .16s ease, border-color .16s ease, transform .16s ease; }
+.topActions button:hover { background: rgba(60, 67, 93, .9); border-color: var(--ui56-line-strong); transform: translateY(-1px); }
+.topActions button:focus-visible, .timelineToolbar button:focus-visible, .trackToolbar button:focus-visible, .insTabs button:focus-visible { outline: 2px solid var(--ui56-accent-2); outline-offset: 2px; }
+.topActions .exportButton, .topActions button[aria-label*="Export"], .topActions button:last-child { background: linear-gradient(135deg, #c6a9ff, #8aa8ff); border-color: transparent; color: #111322; font-weight: 800; }
+.saveBadge, .gpuStatus { max-width: 175px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gpuStatus { order: 1; color: #92e0c4; border: 1px solid rgba(133,225,189,.18); background: rgba(43, 112, 91, .13); border-radius: 999px; padding: 5px 9px; font-size: 11px; }
+.saveBadge { font-size: 11px; color: var(--ui56-muted); }
+
+.statusBar { min-height: 30px; padding: 0 14px; gap: 10px; background: #0d171b; border-bottom: 1px solid rgba(133,225,189,.12); color: #a6e9cd; }
+.statusBar [aria-live] { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.statusBar.is-error { color: var(--ui56-danger); background: rgba(87, 25, 39, .28); border-bottom-color: rgba(255,139,152,.2); }
+.statusBar.is-warning { color: var(--ui56-warning); background: rgba(91, 64, 20, .26); border-bottom-color: rgba(255,211,122,.2); }
+.statusBar.is-neutral { color: var(--ui56-muted); background: rgba(16, 22, 34, .92); border-bottom-color: var(--ui56-line); }
+
+/* Main work area: more room for the viewer, but the timeline never disappears. */
+.editorGrid { min-height: 0; grid-template-rows: minmax(240px, 1fr) minmax(245px, 34vh) !important; gap: 8px; background: var(--ui56-surface-0); }
+.panel, .viewerPanel, .inspector, .timelinePanel { min-width: 0; min-height: 0; border-color: var(--ui56-line); }
+.panelHeader, .inspectorHeader { min-height: 44px; padding: 9px 12px; background: rgba(21, 27, 42, .78); border-bottom-color: var(--ui56-line); }
+.panelBody, .inspectorBody { scrollbar-color: rgba(182,154,255,.45) transparent; scrollbar-width: thin; }
+.panelBody::-webkit-scrollbar, .inspectorBody::-webkit-scrollbar, .mediaPanel::-webkit-scrollbar { width: 7px; height: 7px; }
+.panelBody::-webkit-scrollbar-thumb, .inspectorBody::-webkit-scrollbar-thumb, .mediaPanel::-webkit-scrollbar-thumb { background: rgba(160, 168, 198, .34); border-radius: 999px; }
+.panelBody::-webkit-scrollbar-track, .inspectorBody::-webkit-scrollbar-track, .mediaPanel::-webkit-scrollbar-track { background: transparent; }
+
+/* Viewer empty/loaded states read as one calm card. */
+.viewerPanel { background: radial-gradient(circle at 50% 12%, rgba(79, 72, 125, .14), transparent 55%), #090c13; }
+.viewerEmpty, .noSelection { color: var(--ui56-muted); gap: 7px; }
+.viewerEmpty strong, .noSelection strong, .viewerEmpty b, .noSelection b { color: var(--ui56-text); font-weight: 750; }
+.viewerEmpty button, .noSelection button { margin-top: 8px; padding: 8px 12px; border: 1px solid rgba(182,154,255,.45); border-radius: 8px; background: rgba(182,154,255,.12); color: #e9e1ff; cursor: pointer; }
+.viewerEmpty button:hover, .noSelection button:hover { background: rgba(182,154,255,.22); }
+.transport { min-height: 48px; padding: 7px 10px; border-top: 1px solid var(--ui56-line); background: rgba(12, 17, 27, .9); }
+.transport input[type="range"] { accent-color: var(--ui56-accent); }
+
+/* Inspector is a predictable stack of sections, not a wall of controls. */
+.inspector { background: var(--ui56-surface-1); }
+.insTabs { position: sticky; top: 0; z-index: 2; padding: 8px 10px 7px; background: rgba(15, 20, 32, .96); border-bottom: 1px solid var(--ui56-line); }
+.insTabs button { min-height: 30px; border-radius: 7px; color: var(--ui56-muted); }
+.insTabs button.active { color: var(--ui56-text); background: rgba(182,154,255,.14); box-shadow: inset 0 -2px var(--ui56-accent); }
+.inspectorBody { padding: 12px; }
+.inspectorBody > label, .inspectorBody > .controlGroup, .inspectorBody > section { padding: 10px; border: 1px solid var(--ui56-line); border-radius: var(--ui56-radius); background: rgba(21, 27, 42, .64); }
+.inspectorBody > * + * { margin-top: 9px; }
+.inspectorFooter { position: sticky; bottom: 0; z-index: 2; padding: 9px 12px; background: rgba(15,20,32,.96); border-top: 1px solid var(--ui56-line); }
+
+/* Timeline toolbar: useful actions stay visible; destructive/rare actions are
+   kept in the existing panels instead of adding another crowded row. */
+.timelineToolbar { min-height: 52px; padding: 7px 9px; gap: 7px; overflow: hidden; background: #0d111b; border-top-color: var(--ui56-line); border-bottom-color: var(--ui56-line); }
+.timelineToolbar > * { flex: 0 0 auto; }
+.timelineToolbar button { min-height: 32px; padding: 0 10px; border: 1px solid var(--ui56-line); border-radius: 7px; background: rgba(25, 32, 48, .9); color: var(--ui56-text); font-size: 12px; }
+.timelineToolbar button:hover { background: rgba(59, 67, 93, .9); }
+.timelineToolbar button.active, .timelineToolbar button[aria-pressed="true"] { background: rgba(182,154,255,.17); border-color: rgba(182,154,255,.55); color: #eee8ff; }
+.timelineToolbar .zoomCtl { margin-left: auto; min-width: 120px; }
+.timelineToolbar input[type="range"] { accent-color: var(--ui56-accent); }
+.trackToolbar { min-height: 48px; padding: 7px 10px; background: #101522; border-bottom-color: var(--ui56-line); }
+.trackToolbar select, .trackToolbar button { min-height: 31px; border: 1px solid var(--ui56-line); border-radius: 7px; background: rgba(25, 32, 48, .9); color: var(--ui56-text); }
+.timelineViewport { scrollbar-color: rgba(160,168,198,.35) transparent; scrollbar-width: thin; }
+.timelineViewport::-webkit-scrollbar, .timelineRuler::-webkit-scrollbar { width: 8px; height: 8px; }
+.timelineViewport::-webkit-scrollbar-thumb, .timelineRuler::-webkit-scrollbar-thumb { background: rgba(160,168,198,.38); border-radius: 999px; }
+.timelineViewport::-webkit-scrollbar-track, .timelineRuler::-webkit-scrollbar-track { background: transparent; }
+
+/* A selected clip is unmistakable without adding another permanent control. */
+.clipBox { transition: filter .12s ease, box-shadow .12s ease, border-color .12s ease; }
+.clipBox.selected { z-index: 2; border-color: rgba(202, 184, 255, .95) !important; box-shadow: 0 0 0 2px rgba(182,154,255,.22), 0 5px 14px rgba(0,0,0,.2); filter: saturate(1.07); }
+.clipBox.selected::before { content: '✓'; position: absolute; top: 4px; right: 5px; z-index: 3; display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #c4a8ff; color: #151125; font-size: 11px; font-weight: 900; pointer-events: none; }
+.clipBox.adjustment { background: linear-gradient(135deg, rgba(112,78,172,.75), rgba(79,68,145,.73)); border-color: rgba(202,184,255,.44); }
+.clipBox.missingClip { border-color: rgba(255,139,152,.7) !important; background: rgba(96, 36, 53, .52); }
+
+/* Missing media gets one clear visual language everywhere. */
+.missingBanner { margin: 7px 10px; padding: 8px 10px; border: 1px solid rgba(255,139,152,.32); border-radius: 8px; background: rgba(96, 36, 53, .25); color: #ffc1c8; }
+.mediaCard.missing { border-color: rgba(255,139,152,.48); background: rgba(89, 32, 49, .24); }
+.mediaCard.missing .mediaMeta, .mediaCard.missing .sourcePath { color: #ffb1bc; }
+.miniRelink { min-height: 25px; padding: 3px 8px; border: 1px solid rgba(255,139,152,.46); border-radius: 6px; background: rgba(255,139,152,.1); color: #ffd6da; cursor: pointer; }
+.miniRelink:hover { background: rgba(255,139,152,.2); }
+
+/* Creator/Auto Edit controls use the same hierarchy as the inspector. */
+.autoWizard .workflowStep, .autoWizard .workflowCard, .creatorWorkspace .creatorCard, .framingWorkspace .framingCard { border-color: var(--ui56-line); border-radius: 10px; background: rgba(21,27,42,.78); }
+.autoWizard .workflowNav, .creatorWorkspace .workflowNav { border-bottom-color: var(--ui56-line); }
+.autoWizard .stepTab, .creatorWorkspace .stepTab { border-radius: 8px; }
+.autoWizard .stepTab.active, .creatorWorkspace .stepTab.active { color: var(--ui56-text); background: rgba(182,154,255,.15); box-shadow: inset 0 -2px var(--ui56-accent); }
+.autoWizard input[type="range"], .creatorWorkspace input[type="range"], .framingWorkspace input[type="range"] { accent-color: var(--ui56-accent); }
+.framingWorkspace .framePreview, .framingWorkspace canvas { border-radius: 9px; border-color: rgba(182,154,255,.34); }
+.framingWorkspace .frameChoice.active { border-color: rgba(182,154,255,.78); background: rgba(182,154,255,.14); }
+
+/* Project Home becomes a dashboard, while keeping the existing actions. */
+.projectHome { background: radial-gradient(circle at 16% 0%, rgba(91,72,157,.12), transparent 38%), var(--ui56-surface-0); }
+.homeHeader { border-bottom-color: var(--ui56-line); }
+.projectCard { border-color: var(--ui56-line); background: linear-gradient(145deg, rgba(21,27,42,.94), rgba(14,18,29,.96)); transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.projectCard:hover { transform: translateY(-2px); border-color: rgba(182,154,255,.42); box-shadow: 0 12px 24px rgba(0,0,0,.2); }
+.projectCard.selected { border-color: rgba(182,154,255,.8); box-shadow: 0 0 0 2px rgba(182,154,255,.16); }
+.projectCardMeta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 16px 5px; color: var(--ui56-muted); font-size: 11px; }
+.projectBadge { padding: 3px 7px; border: 1px solid rgba(182,154,255,.35); border-radius: 999px; color: #e8ddff; background: rgba(182,154,255,.11); }
+.projectCard.isPinned .projectBadge { border-color: rgba(255,211,122,.38); color: #ffe1a4; background: rgba(255,211,122,.1); }
+.projectCardActions button { min-height: 30px; border-radius: 7px; }
+.projectCardActions button:hover { border-color: rgba(182,154,255,.5); }
+.homeEmpty { min-height: 220px; border: 1px dashed var(--ui56-line-strong); border-radius: 12px; background: rgba(21,27,42,.36); }
+.homeEmpty strong { color: var(--ui56-text); }
+.homeEmpty button { border-radius: 8px; background: linear-gradient(135deg, #b69aff, #7e9dff); color: #171226; font-weight: 800; }
+.emptyActions { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+
+/* Avoid controls becoming unusable at 1366px/125% scaling. */
+@media (max-width: 1180px) {
+  .brand span { display: none; }
+  .saveBadge { display: none; }
+  .gpuStatus { order: 0; max-width: 125px; }
+  .editorGrid { grid-template-columns: minmax(185px, 220px) minmax(0, 1fr) minmax(230px, 280px) !important; }
+}
+@media (max-width: 900px) {
+  .topbar { min-height: 54px; }
+  .topActions button { padding: 0 8px; }
+  .editorGrid { grid-template-columns: 1fr !important; grid-template-rows: minmax(250px, 1fr) minmax(230px, 38vh) !important; }
+  .mediaPanel, .inspector { display: none; }
+  .timelineToolbar { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+  .timelineToolbar .zoomCtl { margin-left: 4px; }
+}

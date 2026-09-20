@@ -1,114 +1,103 @@
-# RanCut 0.5.3 — Frame Chooser & Creator Zoom
+# RanCut 0.5.6 — Original Logo & Subtle Studio Theme
 
-- Frame chooser inside both crop and protect dialogs: source-time slider, seconds field, Show frame, and ±1 second.
-- Base scene zoom defaults to 108%, adjustable 100–130% in Styles and Auto Edit. Top-anchored framing permits belly cropping; person and background move together.
-- Protect only the head/upper body you want retained. Manual box, not AI tracking. For moving subjects, review several frames.
-- Toolbar simplified: Split, Duplicate, Q/W, Auto Edit, Follow and Fit. Remaining actions and toggles are under More; keyboard shortcuts remain.
-- Existing projects are not silently reframed. Reapply a Style to update unlocked Style segments; manually locked segments are kept.
-- Clean-edge masking preserves body proportions; corrected top/bottom mask orientation.
-- This is source code with GitHub Windows installer workflow, not a prebuilt Windows EXE.
+This ZIP contains the complete updated source and Windows installer workflow.
+It is not a prebuilt EXE. Replace the repository contents with the contents of
+the rancut folder, including .github/workflows/build.yml.
 
-# RanCut 0.5.2 — Clean Edge Framing Preview
+## Brand update
 
-Built on 0.4.9. Project Home/recovery, native source reconnect, chroma shader,
-Reliable export, experimental Direct export and sleep protection are retained.
+- Supplied logo JPEG is included byte-for-byte as public/brand-original.jpeg.
+- Header, Project Home, About and favicon use that original artwork.
+- Desktop PNG preserves original dimensions. Windows ICO contains proportional,
+  padded size conversions of the same artwork, with no redraw or recolouring.
+- Dark navy panels with restrained purple/blue accents on selected controls,
+  sliders, Style clips and Export. Audio remains green; missing media remains red.
+- No animated glow, background video, blur effects or additional runtime dependencies.
+- Editor controls, timeline geometry and base/close-up framing behaviour are retained.
 
-## 0.5.2 additions
+## Creator workspace
 
-- Clean-picture edges preserve the original scale and position; they mask unwanted source edges instead of zooming the subject.
-- Crop and protected-person dialogs decode the selected source at the active playhead (or chosen source time in Auto Edit).
+- Shared Creator Styles / Auto Edit camera workspace: normal base and maximum
+  close-up are locked 16:9 boxes. Move the box or resize its lower-right handle.
+  X, Y and Zoom have sliders plus numeric fields. Fit, Fill and Reset are visible.
+- Clean edges is a separate source mask. It never squeezes or stretches the person.
+  It opens by default in Auto Edit. The mask may have any aspect ratio.
+- Source frame slider, seconds field and Show frame work independently of the
+  timeline playhead. Changing the displayed time preserves the selected boxes.
+- Simple uses gentle close-ups and zooms. Dynamic cycles Normal, Close-up,
+  Slow zoom in, Slow zoom out, Left framing and Right framing. Lateral shots are
+  steady. Short clips under 1.2 seconds keep a steady pose.
+- Normal uses the saved base. Dynamic zoom-in goes base to close-up; zoom-out
+  reverses it. Person and background move as one scene. Fixed logos stay outside
+  the scene transform unless explicitly included.
+- Full-window Auto Edit: preview left, settings right, draggable divider,
+  independent scrolling, fixed step navigation and footer. Preview does not
+  replace the controls.
+- Broken More menu removed. Timeline actions are directly visible on one compact
+  row; narrow screens can scroll the row. Clear/Delete toolbar buttons removed.
+  Delete/Backspace and Escape still work. Duplicate, Repeat/Extend to end,
+  Q/W ripple, gap, selection, link, Auto Edit, Follow and Fit are retained.
+- Trash supports selection, Select all, Restore selected, and confirmed permanent
+  deletion of selected projects and their recovery copies. Original media files
+  are never deleted.
 
-## 0.5.1 additions
-- Duplicate selected clips or linked A/V, repeat a selection to the timeline end,
-  and extend images/still backgrounds/adjustment layers to the end.
-- Video Inspector now has a real rectangular Crop tool. Crop is rendered in the
-  same WebGL path used by preview and export, with Reset crop.
-- Protect person framing stores a manual body/head box. Creator Styles and Auto
-  Edit use it to limit aggressive zooms. It is a conservative framing helper,
-  not frame-by-frame AI body tracking; review the result.
-- Auto Edit adds a Crop & framing step and an expandable guided workspace.
+## Use the new framing
 
-## 1. Timeline and audio
-- Track × now removes populated unlocked tracks after confirmation. Other-track
-  linked clips remain and are unlinked. Locked counterparts block the operation.
-  Undo restores the deletion. Original media is never deleted.
-- Audio track name opens a full-track master gain dialog. Audio Inspector offers
-  This clip / Selected clips / Full track. Master gain adds to clip gain, with
-  combined gain limited to −60…+12 dB. Waveforms and exports reflect master gain.
-- Q = Ripple Left; W = Ripple Right. M remains Add marker. Key labels use a clear
-  non-monospace font so W is not mistaken for M.
+1. Open Auto Edit, choose the main video and Green-screen or Regular.
+2. Use the time slider or type seconds (120 = 2 minutes), then Show frame.
+3. Clean edges: remove unwanted source corners. Choose background under Look.
+4. Normal base: frame the normal shot you want. Max close-up: put the smaller
+   16:9 box around head/chest, leaving headroom. Belly cropping is allowed.
+5. Style preview: pick a shot, play it, or drag Shot progress. Inspect several
+   source times if the person moves. These are fixed framing limits, not AI tracking.
+6. Select Simple/Dynamic, sound/cut options, Analyse & prepare, then generate the
+   editable project copy. Skipping Style motion retains the chosen normal base.
 
-## 2. Creator Styles
-Styles has its own panel with Simple and Dynamic presets and Apply / Edit.
-Edit includes Reset to default, Save style and Export; Import and Capture edited
-Style are retained. Choose the main video track and Full timeline or Selected
-clip only. Existing manually locked Style segments remain protected.
-Styles transform person + background together. Auto Edit logo tracks stay above
-Style transforms by default; Include logo overrides this. For manual logo tracks,
-Video Inspector has Keep this track above Creator Styles.
-Selected application still requires Style segments aligned with main cuts; the
-app reports a mismatch rather than overwriting unrelated framing.
+For an existing timeline: Styles -> Set base & maximum close-up -> Save framing
+-> Apply Simple/Dynamic. Choose full timeline or selected clips. Saving boxes
+alone does not change existing cuts. Manually locked Style segments are kept;
+use Reset shot / unlock before regenerating those segments.
 
-## 3. Transitions
-Click + at a touching video cut, or open Transitions. Choose Paper, Whoosh,
-Shutter, Glitch or Fade, duration and optional matching/custom sound.
-Scope is This cut or Full video (all touching cuts on that video track).
-Replace existing requires explicit consent. Remove acts on the selected cut.
-Visual transitions stay attached to cut badges, not a separate visual layer.
-Attached sounds remain virtual until export; they move with the cut.
-Preset file import/export and custom sound import are retained.
+Style JSON import/export and Capture edited Style remain available. Built-in
+shots follow the saved boxes. Numeric preset edits and captured presets store
+absolute poses; they need review when used with different footage.
 
-## 4. Clean short leftovers
-Select a main/voice clip -> Audio -> Clean short leftovers -> Scan.
-Default candidates are short clips (up to 2 s, adjustable) with at least 80%
-quiet analysis windows. Aggressive mode includes all short clips, even speech.
-Review candidates, seek to listen, click Keep for wanted pieces, then remove
-reviewed pieces with linked ripple. Undo is available. A changed timeline
-invalidates the review. This is NOT speech recognition or reliable cough removal.
+## Retained
 
-## 5. Auto Edit
-Auto Edit beside Follow opens:
-1. Green-screen / Regular, imported main video and voice source, voice leveling.
-2. Optional background/logo, Simple/Dynamic/no Style, optional transition/sound.
-3. Optional BGM, gain/ducking, pause removal and short-leftover cleanup.
-4. Analyse & prepare -> inspect source ranges -> Generate editable project copy.
+Project Home, recovery copies, original-path media reconnect, red missing-media
+markers, chroma controls, cut-attached transitions and optional sound, audio gain,
+silence cleanup, duplicate/repeat, proxies, undo, GPU-capable encoding and
+remembered output folder are retained. Reliable export stays default;
+Direct export remains experimental. There is no new export-speed claim.
 
-The original project is saved first and never replaced. Generated clips, layers,
-audio and settings remain editable. This starts from the selected source media,
-not from the already-edited timeline. A separate voice recording must align at
-0:00 and cover the main video. Background video and BGM repeat to fill the edit;
-background audio is not included. All processing is local.
-Regular mode skips keying/background selection. Every editing effect can be skipped.
+Existing projects are not silently reframed. Save a .rancut.json backup before
+upgrading, especially if you may return to an older version.
 
-## Honest limits
-- Auto green key samples the first frame. Unclear/black first frames can fail.
-  Check the result and refine Chroma manually; it is not semantic background AI.
-- Voice leveling uses measured RMS windows with sample-peak headroom, not LUFS
-  loudness mastering. It may reduce already-loud audio instead of boosting it.
-- BGM ducking lowers music while unmuted voice clips are active, not word-by-word
-  speech recognition. Preview and export share the interval logic; tiny export
-  fades avoid hard audio edges.
-- Auto Edit cleanup is optional and can remove wanted short speech. Review first.
-- Some existing transitions on different tracks can conflict with a full-video
-  application. The complete operation is rejected rather than partially applied.
-- No new render-speed promise. No heavy AI/runtime dependencies were added.
-- This preview has no active subscriptions, rewarded ads or live feedback service.
+## Windows build
 
-## Windows installer / GitHub
-Use Node 22:
-    npm ci
-    npm test
-    npm run dist:win
+Use Node 22 or newer:
 
-The included GitHub workflow builds with --publish never, no GH_TOKEN required.
-Artifact: release/RanCut-0.5.0-Setup.exe. The source ZIP is not a Windows installer.
-Custom desktop/Start Menu/taskbar/NSIS icons are included.
-Back up saved project JSON and presets before upgrading. Media remains external.
-The local catalog retains schema 2 from 0.4.9; older app versions may need JSON
-backups when rolling back.
+```sh
+npm ci
+npm test
+npm run dist:win
+```
 
-## Validation
-68 automated tests, production build and Electron/preload syntax checks passed.
-See TEST-REPORT.md for exact boundaries. Actual Windows/RTX, browser visuals,
-long-project endurance and installer testing remain outstanding. Public release
-still requires signing, licensing review and configured release/support services.
+GitHub Actions also runs these checks, uses --publish never (no GH_TOKEN needed),
+and uploads release/*-Setup.exe. Expected installer: RanCut-0.5.6-Setup.exe.
+Install over the existing preview to retain local projects.
+
+## Validation and limits
+
+83 automated tests, Vite build, syntax checks, and 18 native shader-rendered
+start/middle/end frames were checked. Read TEST-REPORT.md for exact scope.
+Native shader checks use Linux Mesa software rendering with synthetic media;
+they do not establish Windows/RTX/browser or long-project performance.
+
+Automatic head protection follows your selected static close-up box. It cannot
+track a moving person outside that region. Green sampling still needs a clear
+green source frame. Review cuts, keying and sound before final export.
+
+Subscriptions, rewarded ads, live support and release hosting are not connected.
+This is a preview source release; public-release requirements remain in
+PUBLIC-RELEASE-CHECKLIST.md.

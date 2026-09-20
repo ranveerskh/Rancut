@@ -1,7 +1,8 @@
+import {validateFraming} from './framing.js';
 import {validPose} from './scene-core.js';
 import {validateTransition} from './creator.js';
 import {soundBytes} from './sounds.js';
-export const VERSION='0.5.3';
+export const VERSION='0.5.6';
 export const uid=(p='c')=>`${p}_${crypto.randomUUID()}`;
 export const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 export const end=c=>c.start+c.duration;
@@ -16,13 +17,14 @@ export function mergeRanges(ranges){const out=[];for(const [a,b] of ranges.filte
 export function validate(p){
  if(p.schema!==1||!Array.isArray(p.clips)||!Array.isArray(p.tracks)||!Array.isArray(p.media)||!Array.isArray(p.markers))throw Error('Invalid project file.');
  if(![24,25,30,50,60].includes(p.fps)||![p.width,p.height].every(n=>Number.isInteger(n)&&n>=64&&n<=7680))throw Error('Invalid project format.');
+ if(p.creatorFraming)validateFraming(p.creatorFraming);
  for(const m of p.media)if(m.sound)soundBytes(m.sound);
  const ts=track(p),ids=new Set(),ms=new Map(p.media.map(m=>[m.id,m]));if(ts.size!==p.tracks.length)throw Error('Duplicate track IDs.');
  for(const t of p.tracks)if(!['video','audio','adjustment'].includes(t.type))throw Error('Invalid track type.');
  for(const t of p.tracks){if(t.gainDb!==undefined&&(!Number.isFinite(t.gainDb)||t.gainDb< -60||t.gainDb>12))throw Error('Invalid track volume.');if(t.duckDb!==undefined&&(!Number.isFinite(t.duckDb)||t.duckDb< -60||t.duckDb>0))throw Error('Invalid BGM ducking level.');}
  for(const c of p.clips){
   if(c.transition)validateTransition(c.transition);
-  if(c.fx?.scene){const m=c.fx.scene;if(!validPose(m.from)||!validPose(m.to)||!Number.isFinite(m.span)||m.span<=0||!Number.isFinite(m.offset)||m.offset<0)throw Error('Invalid Style motion.');}
+  if(c.fx?.scene){const m=c.fx.scene;if(m.framing)validateFraming(m.framing);if(!validPose(m.from)||!validPose(m.to)||!Number.isFinite(m.span)||m.span<=0||!Number.isFinite(m.offset)||m.offset<0)throw Error('Invalid Style motion.');}
   const crop={...fxDefault().crop,...c.fx?.crop};if(!['left','right','top','bottom'].every(k=>Number.isFinite(crop[k])&&crop[k]>=0&&crop[k]<.9)||crop.left+crop.right>=.95||crop.top+crop.bottom>=.95)throw Error('Invalid crop settings.');
   if(c.fx?.subject){const s=c.fx.subject;if(!['x','y','width','height','headroom'].every(k=>Number.isFinite(s[k]))||s.x<0||s.y<0||s.width<=0||s.height<=0||s.x+s.width>1||s.y+s.height>1||s.headroom<0||s.headroom>.5)throw Error('Invalid subject frame.');}
   if(ids.has(c.id))throw Error('Duplicate clip IDs.');ids.add(c.id);

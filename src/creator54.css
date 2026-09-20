@@ -1,0 +1,46 @@
+/* Shared camera workspace. Preview and controls scroll independently. */
+.workflowDialog.creatorWorkspace[open]{display:flex;flex-direction:column;width:calc(100vw - 24px);height:calc(100dvh - 24px);max-width:none;max-height:none;overflow:hidden;margin:auto}
+.creatorWorkspace>header,.creatorWorkspace>footer{flex:none;padding:12px 18px}
+.creatorWorkspace>header p{margin:4px 0}
+.creatorWorkspace>nav{flex:none;padding:8px 18px;gap:6px}
+.creatorWorkspace .autoColumns{flex:1;min-height:0;display:grid;overflow:hidden}
+.creatorWorkspace .autoPreview{overflow:auto;min-width:0;padding:12px 16px}
+.creatorWorkspace .autoControls{max-height:none;min-height:0;overflow:auto;padding:16px}
+.autoDivider{cursor:col-resize;background:#263847;touch-action:none}
+.autoDivider:hover,.autoDivider:focus{background:#92dcb9;outline:none}
+.framingWorkspace{min-width:0}
+.workflowDialog .frameTabs{padding:0 0 10px;gap:6px}
+.frameTabs button{font-size:12px;padding:8px!important}
+.frameMainView{display:flex;align-items:center;justify-content:center;background:#070c11;border:1px solid #344757;border-radius:9px;overflow:hidden}
+.framingStage{position:relative;width:min(100%,calc(42vh * var(--frame-ratio,1.777778)));overflow:hidden;user-select:none}
+.framingStage img{display:block;width:100%;height:100%;object-fit:fill}
+.frameMainView>canvas{display:block;width:100%;max-height:42vh;object-fit:contain;aspect-ratio:16/9}
+.frameSelection{position:absolute;border:2px solid #a4edcc;box-sizing:border-box;cursor:move;touch-action:none;box-shadow:0 0 0 9999px #0005}
+.frameSelection>span{display:block;position:absolute;left:4px;top:4px;background:#102820dc;padding:3px 5px;color:#d8ffe9;font-size:11px;pointer-events:none}
+.frameSelection .frameResize{position:absolute;right:-5px;bottom:-5px;width:18px;height:18px;padding:0;background:#a4edcc;border:2px solid #103c28;cursor:nwse-resize;touch-action:none}
+.baseGuide{position:absolute;border:1px dashed #ffe09a;box-sizing:border-box;pointer-events:none}
+.frameOutputRow{display:flex;align-items:center;gap:12px;margin:10px 0}
+.frameOutputRow canvas{width:180px;max-width:35%;aspect-ratio:16/9;background:#080d12;border:1px solid #344757;border-radius:6px}
+.frameOutputRow small{flex:1;font-size:12px}
+.frameSeekRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.workflowDialog .frameSeekRow input[type=range]{flex:1;max-width:none;min-width:80px;padding:0}
+.workflowDialog .frameSeekRow input[type=number]{width:85px}
+.frameSeekRow small{font-variant-numeric:tabular-nums}
+.workflowDialog .frameControl{display:grid;grid-template-columns:92px minmax(60px,1fr) 85px;gap:10px;margin:8px 0}
+.workflowDialog .frameControl input{max-width:none;width:100%;box-sizing:border-box}
+.workflowDialog .frameControl input[type=range]{padding:0}
+.frameActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.workflowDialog.framingDialog54[open]{display:flex;flex-direction:column;width:min(1040px,95vw);height:94dvh;max-height:94dvh;overflow:hidden}
+.framingDialog54>.framingWorkspace{flex:1;min-height:0;overflow:auto;padding:16px 22px}
+.framingDialog54>header,.framingDialog54>footer{flex:none}
+.timelineToolbar{gap:5px!important;flex-wrap:nowrap!important;overflow-x:auto;overflow-y:hidden;min-height:46px}
+.timelineToolbar .editBtns{display:flex;flex-wrap:nowrap!important;gap:4px;flex:1;min-width:max-content}
+.timelineToolbar button{white-space:nowrap;padding:6px 7px!important;font-size:11px!important;min-height:30px}
+.timelineToolbar kbd{font-size:10px!important}
+.timelineToolbar svg{width:12px;height:12px}
+.timelineToolbar .zoomCtl{flex:none;gap:5px}
+.timelineToolbar .zoomCtl input{width:75px}
+.trashActions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:12px 0}
+.trashActions label,.trashSelect{display:flex;align-items:center;gap:8px}
+.trashSelect{padding:10px 12px;background:#192631}
+@media(max-width:900px){.creatorWorkspace .autoPreview{padding:8px}.creatorWorkspace .autoControls{padding:10px}.workflowDialog .frameControl{grid-template-columns:75px minmax(40px,1fr) 65px}.frameOutputRow canvas{width:125px}.frameSeekRow small{display:none}}
