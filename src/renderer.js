@@ -7,7 +7,7 @@ import {compositePass} from './composite-shader.js';
 import {envelope,fadeDuration} from './editing.js';
 import {activeAt,fxDefault,clamp} from './timeline.js';
 export const vertex=`attribute vec2 pos;varying vec2 v;void main(){v=pos*.5+.5;gl_Position=vec4(pos,0.,1.);}`;
-export const fragment=`precision highp float;varying vec2 v;uniform sampler2D tex;uniform int mode;uniform vec2 fit;uniform vec2 offset;uniform float scale;uniform float opacity;uniform vec2 pixel;uniform float blur;
+export const fragment=`precision highp float;varying vec2 v;uniform sampler2D tex;uniform int mode;uniform vec2 fit;uniform vec2 offset;uniform float scale;uniform float opacity;uniform vec2 pixel;uniform float blur;uniform vec4 crop;
 uniform bool keyOn;uniform bool matte;uniform vec3 key;uniform float threshold;uniform float softness;uniform float choke;uniform float feather;uniform float spill;uniform float decontam;
 uniform float exposure;uniform float contrast;uniform float saturation;uniform float temp;uniform float tint;uniform int transKind;uniform float transProgress;
 vec3 grade(vec3 c){c*=pow(2.,exposure);c=(c-.5)*(1.+contrast)+.5;float l=dot(c,vec3(.2126,.7152,.0722));c=mix(vec3(l),c,saturation);c+=vec3(temp*.06-tint*.018,tint*.035,-temp*.06-tint*.018);return clamp(c,0.,1.);}
@@ -15,7 +15,7 @@ float rawAlpha(vec2 uv){vec4 c=texture2D(tex,uv);float excess=(c.g-max(c.r,c.b))
 float cleanAlpha(vec2 uv){float a=rawAlpha(uv),lo=a;for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++)lo=min(lo,rawAlpha(uv+pixel*vec2(float(x),float(y))));return mix(a,lo,choke);}
 void main(){
  ${compositePass}
- vec2 uv=(v-.5-offset)/(fit*scale)+.5;if(any(lessThan(uv,vec2(0.)))||any(greaterThan(uv,vec2(1.)))){gl_FragColor=vec4(0.);return;}
+ vec2 uv=(v-.5-offset)/(fit*scale)+.5;if(any(lessThan(uv,vec2(0.)))||any(greaterThan(uv,vec2(1.)))){gl_FragColor=vec4(0.);return;}uv=vec2(crop.x,crop.z)+uv*vec2(1.-crop.x-crop.y,1.-crop.z-crop.w);
  vec4 c=texture2D(tex,uv);if(blur>.01){vec2 d=pixel*blur;c=c*.4+(texture2D(tex,uv+vec2(d.x,0.))+texture2D(tex,uv-vec2(d.x,0.))+texture2D(tex,uv+vec2(0.,d.y))+texture2D(tex,uv-vec2(0.,d.y)))*.15;}
  float a=c.a;vec3 rgb=c.rgb;
  if(keyOn){a=cleanAlpha(uv);if(feather>0.){vec2 d=pixel*max(.5,feather);float b=(cleanAlpha(uv+vec2(d.x,0.))+cleanAlpha(uv-vec2(d.x,0.))+cleanAlpha(uv+vec2(0.,d.y))+cleanAlpha(uv-vec2(0.,d.y)))*.25;a=mix(a,b,min(.65,feather*.43));}
@@ -47,7 +47,7 @@ export class Renderer{
   else if(audioTrack)e.el.muted=true;
   if(play){if(e.el.paused)await e.el.play().catch(()=>{});}else e.el.pause();return e.el;
  }
- uniforms(fx){const d=fxDefault(),f={...d,...fx},k={...d.chroma,...f.chroma},c={...d.color,...f.color},tr={...d.transform,...f.transform};this.i('keyOn',k.enabled?1:0);this.i('matte',k.matte?1:0);const hex=k.key||'#13470e';this.gl.uniform3f(this.loc('key'),...([1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255)));for(const n of ['threshold','softness','choke','feather','spill','decontam'])this.f(n,k[n]);this.f('scale',tr.scale/100);this.f('opacity',tr.opacity/100);this.v2('offset',tr.x/250,-tr.y/250);this.f('blur',f.blur||0);this.f('exposure',c.exposure);this.f('contrast',c.contrast/100);this.f('saturation',c.saturation/100);this.f('temp',c.temp/100);this.f('tint',c.tint/100);}
+ uniforms(fx){const d=fxDefault(),f={...d,...fx},k={...d.chroma,...f.chroma},c={...d.color,...f.color},tr={...d.transform,...f.transform},crop={...d.crop,...f.crop};this.i('keyOn',k.enabled?1:0);this.i('matte',k.matte?1:0);const hex=k.key||'#13470e';this.gl.uniform3f(this.loc('key'),...([1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255)));for(const n of ['threshold','softness','choke','feather','spill','decontam'])this.f(n,k[n]);this.f('scale',tr.scale/100);this.f('opacity',tr.opacity/100);this.v2('offset',tr.x/250,-tr.y/250);this.gl.uniform4f(this.loc('crop'),crop.left,crop.right,crop.top,crop.bottom);this.f('blur',f.blur||0);this.f('exposure',c.exposure);this.f('contrast',c.contrast/100);this.f('saturation',c.saturation/100);this.f('temp',c.temp/100);this.f('tint',c.tint/100);}
  async draw(p,media,t,{play=false,width=1280,exact=false,fast=false}={}){
   if(this.disposed)return false;if(this.drawing&&!exact)return false;this.drawing=true;
   try{

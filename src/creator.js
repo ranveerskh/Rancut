@@ -13,6 +13,19 @@ export function validateStyle(v){
  for(const s of v.shots)if(typeof s.name!=='string'||s.name.length>80||!validPose(s.from)||!validPose(s.to))throw Error('Style scale must be 100–180%; X/Y must be −30…30.');
  return structuredClone(v);
 }
+// A manual subject frame keeps automated zooms conservative. It is deliberately
+// geometry-only: it never pretends to be full frame-by-frame AI tracking.
+export function subjectSafePose(pose,subject){
+ if(!subject)return structuredClone(pose);
+ const coverage=Math.max(subject.width,subject.height+subject.headroom);
+ const maxScale=Math.max(100,Math.min(180,100/Math.max(.05,coverage)));
+ const scale=Math.min(pose.scale,maxScale);
+ const margin=(scale/100-1)*125;
+ // Move the chosen body centre toward the frame centre, but never beyond the
+ // available zoom margin. This protects headroom before any style movement.
+ const cx=subject.x+subject.width/2-.5,cy=subject.y+subject.height/2-.5-subject.headroom/2;
+ return {...pose,scale,x:Math.max(-margin,Math.min(margin,pose.x-cx*120)),y:Math.max(-margin,Math.min(margin,pose.y+cy*120))};
+}
 export function applyStyle(p,sourceTrack,preset,seed=1,options={}){
  preset=validateStyle(preset);const source=p.tracks.find(t=>t.id===sourceTrack);
  if(source?.type!=='video')throw Error('Choose your main video track.');
@@ -31,7 +44,7 @@ export function applyStyle(p,sourceTrack,preset,seed=1,options={}){
  const clips=cuts.map(c=>{
    const fixed=keep.find(s=>Math.abs(s.start-c.start)<T.EPS&&Math.abs(s.duration-c.duration)<T.EPS);if(fixed)return fixed;
    n=(Math.imul(n,1664525)+1013904223)>>>0;let index=n%preset.shots.length;if(index===last&&preset.shots.length>1)index=(index+1)%preset.shots.length;last=index;
-   const shot=preset.shots[index];return {id:T.uid('style'),kind:'adjustment',mediaId:null,trackId:track.id,name:shot.name,start:c.start,duration:c.duration,sourceIn:0,linkedId:null,fx:{...T.fxDefault(),scene:{from:shot.from,to:shot.to,span:c.duration,offset:0,includeLogo:!!options.includeLogo}},styleLocked:false};
+   const shot=preset.shots[index],subject=options.subject||c.fx?.subject;return {id:T.uid('style'),kind:'adjustment',mediaId:null,trackId:track.id,name:shot.name,start:c.start,duration:c.duration,sourceIn:0,linkedId:null,fx:{...T.fxDefault(),scene:{from:subjectSafePose(shot.from,subject),to:subjectSafePose(shot.to,subject),span:c.duration,offset:0,includeLogo:!!options.includeLogo,subjectSafe:!!subject}},styleLocked:false};
  });
  if(keep.some(c=>!clips.includes(c)))throw Error('A locked Style segment no longer matches the main cuts. Unlock it before regenerating.');
  q.clips=[...q.clips.filter(c=>c.trackId!==track.id),...preserved,...clips];q.creatorPreset=preset;q.creatorSource=sourceTrack;

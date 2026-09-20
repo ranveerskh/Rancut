@@ -27,3 +27,4 @@ test('logo stays above scene styles by default; include-logo option restores who
  const hidden={...p,tracks:p.tracks.map(t=>t.creatorStyle?{...t,hidden:true}:t)};
  assert.equal(sceneTrackOrder(hidden,0).at(-1).id,'V3');
 });
+test('Auto Edit carries manual crop and protected subject into footage and conservative styles',()=>{const crop={left:.1,right:.05,top:0,bottom:.08},subject={x:.24,y:.05,width:.48,height:.86,headroom:.05};const p=buildAutoEdit(fixture(),{mainId:'main',green:false,style:'dynamic',crop,subject},analysis);const main=p.clips.find(c=>c.trackId==='V2');assert.deepEqual(main.fx.crop,crop);assert.deepEqual(main.fx.subject,subject);const style=p.clips.find(c=>c.fx?.scene);assert(style.fx.scene.subjectSafe);assert(style.fx.scene.from.scale<=Math.floor(100/Math.max(subject.width,subject.height+subject.headroom))*1.01);});

@@ -1,13 +1,13 @@
 import {validPose} from './scene-core.js';
 import {validateTransition} from './creator.js';
 import {soundBytes} from './sounds.js';
-export const VERSION='0.5.0';
+export const VERSION='0.5.1';
 export const uid=(p='c')=>`${p}_${crypto.randomUUID()}`;
 export const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 export const end=c=>c.start+c.duration;
 export const quant=(t,fps)=>Math.round(t*fps)/fps;
 export const EPS=1e-7;
-export const fxDefault=()=>({chroma:{enabled:false,engine:'sample',key:'#13470e',threshold:.14,softness:.4,choke:.35,feather:.5,spill:.94,decontam:1,matte:false},color:{exposure:0,contrast:0,saturation:100,temp:0,tint:0},transform:{x:0,y:0,scale:100,opacity:100},blur:0,gainDb:0});
+export const fxDefault=()=>({chroma:{enabled:false,engine:'sample',key:'#13470e',threshold:.14,softness:.4,choke:.35,feather:.5,spill:.94,decontam:1,matte:false},color:{exposure:0,contrast:0,saturation:100,temp:0,tint:0},transform:{x:0,y:0,scale:100,opacity:100},crop:{left:0,right:0,top:0,bottom:0},blur:0,gainDb:0});
 export const emptyProject=()=>({schema:1,version:VERSION,name:'Untitled',fps:30,width:1920,height:1080,tracks:[{id:'V1',type:'video',hidden:false,muted:false,locked:false},{id:'A1',type:'audio',hidden:false,muted:false,locked:false}],clips:[],markers:[],media:[]});
 export const duration=p=>Math.max(0,...p.clips.map(end));
 export const activeAt=(p,t)=>p.clips.filter(c=>t>=c.start-EPS&&t<end(c)-EPS);
@@ -23,6 +23,8 @@ export function validate(p){
  for(const c of p.clips){
   if(c.transition)validateTransition(c.transition);
   if(c.fx?.scene){const m=c.fx.scene;if(!validPose(m.from)||!validPose(m.to)||!Number.isFinite(m.span)||m.span<=0||!Number.isFinite(m.offset)||m.offset<0)throw Error('Invalid Style motion.');}
+  const crop={...fxDefault().crop,...c.fx?.crop};if(!['left','right','top','bottom'].every(k=>Number.isFinite(crop[k])&&crop[k]>=0&&crop[k]<.9)||crop.left+crop.right>=.95||crop.top+crop.bottom>=.95)throw Error('Invalid crop settings.');
+  if(c.fx?.subject){const s=c.fx.subject;if(!['x','y','width','height','headroom'].every(k=>Number.isFinite(s[k]))||s.x<0||s.y<0||s.width<=0||s.height<=0||s.x+s.width>1||s.y+s.height>1||s.headroom<0||s.headroom>.5)throw Error('Invalid subject frame.');}
   if(ids.has(c.id))throw Error('Duplicate clip IDs.');ids.add(c.id);
   if(!ts.has(c.trackId)||![c.start,c.duration,c.sourceIn].every(Number.isFinite)||c.start<0||c.duration<1/p.fps-EPS||c.sourceIn<0)throw Error('Invalid clip timing.');
   const m=ms.get(c.mediaId),t=ts.get(c.trackId);
@@ -78,3 +80,19 @@ export function resizeClip(p,id,edge,time,ripple){
 }
 export function addTrack(p,type){const prefix=type==='audio'?'A':type==='adjustment'?'ADJ':'V';const nums=p.tracks.filter(t=>t.id.startsWith(prefix)).map(t=>Number(t.id.slice(prefix.length))||0);const t={id:prefix+(Math.max(0,...nums)+1),type,hidden:false,muted:false,locked:false};return {...p,tracks:type==='audio'?[...p.tracks,t]:type==='video'?[...p.tracks.filter(x=>x.creatorStyle),t,...p.tracks.filter(x=>!x.creatorStyle)]:[t,...p.tracks]};}
 export function addMediaClip(p,mediaId,trackId,start){const m=p.media.find(m=>m.id===mediaId);if(!m)throw Error('Media not found.');const t=track(p).get(trackId);if(!t)throw Error('Track not found.');const c={id:uid(),mediaId,trackId,name:m.name,start:quant(Math.max(0,start),p.fps),duration:Math.max(1/p.fps,Math.floor(m.duration*p.fps)/p.fps),sourceIn:0,fx:fxDefault(),linkedId:null};let after={...p,clips:[...p.clips,c]};if(m.type==='video'&&t.type==='video'&&m.hasAudio!==false){let a=p.tracks.find(t=>t.type==='audio'&&!t.locked&&!p.clips.some(x=>x.trackId===t.id&&x.start<end(c)-EPS&&end(x)>c.start+EPS));if(!a){after=addTrack(after,'audio');a=after.tracks.at(-1);}const audio={...structuredClone(c),id:uid(),trackId:a.id,linkedId:c.id};c.linkedId=audio.id;after.clips.push(audio);}return finish(p,after);}
+
+export function duplicateClips(p,ids,{count=1,until=null}={}){
+ const chosen=new Set(ids.flatMap(id=>pair(p,id)));if(!chosen.size)throw Error('Select one or more clips to duplicate.');
+ const seed=p.clips.filter(c=>chosen.has(c.id)).sort((a,b)=>a.start-b.start);if(!seed.length)throw Error('Selected clips no longer exist.');
+ for(const c of seed)if(track(p).get(c.trackId)?.locked)throw Error(`Unlock ${c.trackId} first.`);
+ const first=Math.min(...seed.map(c=>c.start)),last=Math.max(...seed.map(end)),span=last-first;if(span<=EPS)throw Error('Cannot duplicate an empty selection.');
+ const maxCopies=until===null?Math.max(1,Math.min(200,Math.floor(count))):Math.max(1,Math.min(1000,Math.ceil(Math.max(0,until-last)/span)));
+ let out=[...p.clips],previous=new Map();
+ for(let n=1;n<=maxCopies;n++){
+  const copies=[];for(const c of seed){const start=c.start+span*n;if(until!==null&&start>=until-EPS)continue;const duration=until===null?c.duration:Math.min(c.duration,until-start);if(duration<1/p.fps-EPS)continue;const next={...structuredClone(c),id:uid('copy'),start,duration,linkedId:null};copies.push(next);previous.set(c.id,next);}
+  for(const c of copies){const original=seed.find(x=>x.id===c.id)||null;const linked=seed.find(x=>previous.get(x.id)===c)?.linkedId;if(linked)c.linkedId=previous.get(linked)?.id||null;}
+  out.push(...copies);
+ }
+ return finish(p,{...p,clips:out});
+}
+export function extendClipTo(p,id,until){const c=p.clips.find(x=>x.id===id);if(!c)throw Error('Select a clip first.');const target=quant(Math.max(end(c),until),p.fps);const meta=p.media.find(m=>m.id===c.mediaId);if(meta?.type!=='image'&&c.kind!=='adjustment')throw Error('Extend is for images, still backgrounds and adjustment layers. Use Repeat for video or audio.');if(track(p).get(c.trackId)?.locked)throw Error(`Unlock ${c.trackId} first.`);return finish(p,{...p,clips:p.clips.map(x=>x.id===id?{...x,duration:target-x.start}:x)});}

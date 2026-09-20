@@ -6,7 +6,8 @@ export function buildAutoEdit(source,options,analysis){
  const media=id=>source.media.find(m=>m.id===id),main=media(options.mainId),voice=media(options.voiceId||options.mainId);if(main?.type!=='video')throw Error('Choose the main video.');if(!voice||voice.type==='image')throw Error('Choose a voice source.');
  let p={...T.emptyProject(),fps:source.fps,width:source.width,height:source.height,name:(source.name||'Project')+' — Auto Edit',media:structuredClone(source.media),tracks:[{id:'V2',type:'video',name:'Main video'},{id:'V1',type:'video',name:'Background'},{id:'A1',type:'audio',name:'Voice',gainDb:options.normalize?voiceGain(analysis):0}]};
  const duration=Math.floor(main.duration*p.fps)/p.fps;if(duration<1/p.fps)throw Error('Main video is too short.');if(voice.duration+1/p.fps<duration)throw Error('Voice source is shorter than the main video. Use the embedded audio or a matching full-length recording.');
- const v={id:T.uid(),mediaId:main.id,name:main.name,trackId:'V2',start:0,duration,sourceIn:0,fx:T.fxDefault(),linkedId:null};
+ const v={id:T.uid(),mediaId:main.id,name:main.name,trackId:'V2',start:0,duration,sourceIn:0,fx:{...T.fxDefault(),crop:{...T.fxDefault().crop,...(options.crop||{})}},linkedId:null};
+ if(options.subject)v.fx.subject=structuredClone(options.subject);
  if(options.green){if(!options.key)throw Error('Green-screen sampling failed. Choose Regular or check the footage.');v.fx.chroma={...v.fx.chroma,enabled:true,key:options.key};}
  const a={...structuredClone(v),id:T.uid(),mediaId:voice.id,name:voice.name,trackId:'A1',fx:T.fxDefault()};if(voice.id===main.id){v.linkedId=a.id;a.linkedId=v.id;}p.clips=[v,a];
  if(options.trim){const ranges=silenceRanges(a,analysis,{threshold:options.threshold??-38,minPause:options.minPause??.55,padding:options.padding??.12,fps:p.fps});p=T.removeRanges(p,ranges,{ripple:true});}
@@ -16,7 +17,7 @@ export function buildAutoEdit(source,options,analysis){
  loop(options.backgroundId,'V1');
  if(options.bgmId){p.tracks.push({id:'A2',type:'audio',name:'BGM',gainDb:options.bgmDb??-24,duckAgainst:options.duck?'A1':null,duckDb:-10});loop(options.bgmId,'A2');}
  if(options.logoId){const logo=media(options.logoId);if(logo?.type!=='image')throw Error('Logo must be an image.');p.tracks.unshift({id:'V3',type:'video',name:'Logo',fixedOverlay:true});loop(options.logoId,'V3',{transform:{scale:18,x:96,y:96,opacity:100}});}
- if(options.style&&options.style!=='none')p=C.applyStyle(p,'V2',creatorStyles[options.style==='dynamic'?1:0],options.seed??42,{includeLogo:!!options.includeLogo});
+ if(options.style&&options.style!=='none')p=C.applyStyle(p,'V2',creatorStyles[options.style==='dynamic'?1:0],options.seed??42,{includeLogo:!!options.includeLogo,subject:options.subject});
  if(options.transition&&options.transition!=='none'&&C.cutPairs(p,'V2').length)p=applyTransitions(p,{trackId:'V2',preset:{...C.transitionPreset(options.transition),sound:!!options.sound,gainDb:options.soundDb??-16},all:true,replace:true});
  const used=new Set(p.clips.map(c=>c.mediaId));p.media=p.media.filter(m=>used.has(m.id));p.creatorSource='V2';return T.validate(p);
 }
