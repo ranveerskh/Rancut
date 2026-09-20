@@ -1,0 +1,248 @@
+{
+  "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "frames": 18,
+  "checks": [
+    "proportional head",
+    "headroom",
+    "opaque borders",
+    "JS/shader coordinates",
+    "visible zoom in and out",
+    "mask leaves interior unchanged"
+  ],
+  "results": [
+    {
+      "name": "Normal",
+      "time": 0,
+      "pose": {
+        "scale": 108.69565217391303,
+        "x": 0,
+        "y": 10.869565217391298,
+        "opacity": 100
+      },
+      "headWidth": 131,
+      "headHeight": 131,
+      "headTop": 38
+    },
+    {
+      "name": "Normal",
+      "time": 2,
+      "pose": {
+        "scale": 108.69565217391303,
+        "x": 0,
+        "y": 10.869565217391298,
+        "opacity": 100
+      },
+      "headWidth": 131,
+      "headHeight": 131,
+      "headTop": 38
+    },
+    {
+      "name": "Normal",
+      "time": 4,
+      "pose": {
+        "scale": 108.69565217391303,
+        "x": 0,
+        "y": 10.869565217391298,
+        "opacity": 100
+      },
+      "headWidth": 131,
+      "headHeight": 131,
+      "headTop": 38
+    },
+    {
+      "name": "Close-up",
+      "time": 0,
+      "pose": {
+        "scale": 161.29032258064515,
+        "x": 0,
+        "y": 72.58064516129032,
+        "opacity": 100
+      },
+      "headWidth": 194,
+      "headHeight": 195,
+      "headTop": 48
+    },
+    {
+      "name": "Close-up",
+      "time": 2,
+      "pose": {
+        "scale": 161.29032258064515,
+        "x": 0,
+        "y": 72.58064516129032,
+        "opacity": 100
+      },
+      "headWidth": 194,
+      "headHeight": 195,
+      "headTop": 48
+    },
+    {
+      "name": "Close-up",
+      "time": 4,
+      "pose": {
+        "scale": 161.29032258064515,
+        "x": 0,
+        "y": 72.58064516129032,
+        "opacity": 100
+      },
+      "headWidth": 194,
+      "headHeight": 195,
+      "headTop": 48
+    },
+    {
+      "name": "Slow zoom in",
+      "time": 0,
+      "pose": {
+        "scale": 108.69565217391303,
+        "x": 0,
+        "y": 10.869565217391298,
+        "opacity": 100
+      },
+      "headWidth": 131,
+      "headHeight": 131,
+      "headTop": 38
+    },
+    {
+      "name": "Slow zoom in",
+      "time": 2,
+      "pose": {
+        "scale": 134.9929873772791,
+        "x": 0,
+        "y": 41.72510518934081,
+        "opacity": 100
+      },
+      "headWidth": 163,
+      "headHeight": 163,
+      "headTop": 43
+    },
+    {
+      "name": "Slow zoom in",
+      "time": 4,
+      "pose": {
+        "scale": 161.29032258064515,
+        "x": 0,
+        "y": 72.58064516129032,
+        "opacity": 100
+      },
+      "headWidth": 194,
+      "headHeight": 195,
+      "headTop": 48
+    },
+    {
+      "name": "Slow zoom out",
+      "time": 0,
+      "pose": {
+        "scale": 161.29032258064515,
+        "x": 0,
+        "y": 72.58064516129032,
+        "opacity": 100
+      },
+      "headWidth": 194,
+      "headHeight": 195,
+      "headTop": 48
+    },
+    {
+      "name": "Slow zoom out",
+      "time": 2,
+      "pose": {
+        "scale": 134.9929873772791,
+        "x": 0,
+        "y": 41.72510518934081,
+        "opacity": 100
+      },
+      "headWidth": 163,
+      "headHeight": 163,
+      "headTop": 43
+    },
+    {
+      "name": "Slow zoom out",
+      "time": 4,
+      "pose": {
+        "scale": 108.69565217391303,
+        "x": 0,
+        "y": 10.869565217391298,
+        "opacity": 100
+      },
+      "headWidth": 131,
+      "headHeight": 131,
+      "headTop": 38
+    },
+    {
+      "name": "Left framing",
+      "time": 0,
+      "pose": {
+        "scale": 129.87012987012986,
+        "x": -24.350649350649356,
+        "y": 34.090909090909086,
+        "opacity": 100
+      },
+      "headWidth": 156,
+      "headHeight": 156,
+      "headTop": 39
+    },
+    {
+      "name": "Left framing",
+      "time": 2,
+      "pose": {
+        "scale": 129.87012987012986,
+        "x": -24.350649350649356,
+        "y": 34.090909090909086,
+        "opacity": 100
+      },
+      "headWidth": 156,
+      "headHeight": 156,
+      "headTop": 39
+    },
+    {
+      "name": "Left framing",
+      "time": 4,
+      "pose": {
+        "scale": 129.87012987012986,
+        "x": -24.350649350649356,
+        "y": 34.090909090909086,
+        "opacity": 100
+      },
+      "headWidth": 156,
+      "headHeight": 156,
+      "headTop": 39
+    },
+    {
+      "name": "Right framing",
+      "time": 0,
+      "pose": {
+        "scale": 129.87012987012986,
+        "x": 24.350649350649338,
+        "y": 34.090909090909086,
+        "opacity": 100
+      },
+      "headWidth": 156,
+      "headHeight": 156,
+      "headTop": 39
+    },
+    {
+      "name": "Right framing",
+      "time": 2,
+      "pose": {
+        "scale": 129.87012987012986,
+        "x": 24.350649350649338,
+        "y": 34.090909090909086,
+        "opacity": 100
+      },
+      "headWidth": 156,
+      "headHeight": 156,
+      "headTop": 39
+    },
+    {
+      "name": "Right framing",
+      "time": 4,
+      "pose": {
+        "scale": 129.87012987012986,
+        "x": 24.350649350649338,
+        "y": 34.090909090909086,
+        "opacity": 100
+      },
+      "headWidth": 156,
+      "headHeight": 156,
+      "headTop": 39
+    }
+  ]
+}
