@@ -1,13 +1,23 @@
-# RanCut 0.5.2 validation
-Date: 2026-09-19. Linux, Node 24, system FFmpeg CPU. Windows CI uses Node 22.
+# RanCut 0.5.3 validation
+Date: 2026-09-20. Linux, Node 24, system FFmpeg CPU. Windows CI uses Node 22.
 
 ## Executed
-- 71 tests passed; 0 failed; 0 skipped.
+- 76 tests passed; 0 failed; 0 skipped.
 - Production Vite build passed (1606 modules).
 - Electron and preload syntax checks passed.
 - Version, lockfile and runtime-package checks passed.
-- SVG rendered into PNG/ICO; icon visually inspected.
+- Existing icon retained unchanged.
 - No production dependency was added for this update.
+
+## 0.5.3 coverage added
+
+- Base-zoom geometry keeps the upper edge stable and allows bottom/belly crop.
+- Protected head rectangle remains in frame at endpoints and intermediate motion times.
+- Style regeneration retains locked edits and leaves source clips unchanged.
+- Simulated DOM frame chooser: seek, preview replacement, crop preserved, failed seek blocks Apply, successful retry recovers.
+- Simulated full-editor toolbar: extra actions inside More, close after selecting an action.
+- Versions synchronized across header, Help, Home, package, server and workflow.
+- Full test suite, Vite production build, Electron/preload/server syntax checks passed.
 
 ## 0.5.2 coverage added
 

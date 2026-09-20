@@ -16,15 +16,29 @@ export function validateStyle(v){
 // A manual subject frame keeps automated zooms conservative. It is deliberately
 // geometry-only: it never pretends to be full frame-by-frame AI tracking.
 export function subjectSafePose(pose,subject){
+ // Coordinates here are top-left scene coordinates. Only the user's selected
+ // region is protected: the belly BELOW a head/upper-body box may leave frame.
  if(!subject)return structuredClone(pose);
- const coverage=Math.max(subject.width,subject.height+subject.headroom);
- const maxScale=Math.max(100,Math.min(180,100/Math.max(.05,coverage)));
- const scale=Math.min(pose.scale,maxScale);
- const margin=(scale/100-1)*125;
- // Move the chosen body centre toward the frame centre, but never beyond the
- // available zoom margin. This protects headroom before any style movement.
- const cx=subject.x+subject.width/2-.5,cy=subject.y+subject.height/2-.5-subject.headroom/2;
- return {...pose,scale,x:Math.max(-margin,Math.min(margin,pose.x-cx*120)),y:Math.max(-margin,Math.min(margin,pose.y+cy*120))};
+ const left=subject.x,right=subject.x+subject.width;
+ const top=Math.max(0,subject.y-subject.headroom),bottom=subject.y+subject.height;
+ let scale=Math.min(pose.scale,180,100/Math.max(right-left,bottom-top));
+ for(;scale>=100;scale-=.1){
+  const z=scale/100,margin=Math.min(30,(z-1)*125);
+  const xmin=Math.max(-margin,-250*(.5+z*(left-.5)));
+  const xmax=Math.min(margin,250*(.5-z*(right-.5)));
+  const ymin=Math.max(-margin,-250*(.5+z*(top-.5)));
+  const ymax=Math.min(margin,250*(.5-z*(bottom-.5)));
+  if(xmin<=xmax+1e-8&&ymin<=ymax+1e-8)
+   return {...pose,scale,x:T.clamp(pose.x,xmin,xmax),y:T.clamp(pose.y,ymin,ymax)};
+ }
+ return {scale:100,x:0,y:0};
+}
+export function baseStylePose(pose,subject,baseScale=108){
+ if(!Number.isFinite(baseScale)||baseScale<100||baseScale>130)throw Error('Base scene zoom must be 100–130%.');
+ const scale=Math.min(180,pose.scale*baseScale/100);
+ // Anchor the upper edge: extra magnification crops the bottom, not the head.
+ const margin=Math.min(30,(scale/100-1)*125);
+ return subjectSafePose({...pose,scale,x:T.clamp(pose.x,-margin,margin),y:T.clamp(pose.y+margin,-margin,margin)},subject);
 }
 export function applyStyle(p,sourceTrack,preset,seed=1,options={}){
  preset=validateStyle(preset);const source=p.tracks.find(t=>t.id===sourceTrack);
@@ -44,7 +58,7 @@ export function applyStyle(p,sourceTrack,preset,seed=1,options={}){
  const clips=cuts.map(c=>{
    const fixed=keep.find(s=>Math.abs(s.start-c.start)<T.EPS&&Math.abs(s.duration-c.duration)<T.EPS);if(fixed)return fixed;
    n=(Math.imul(n,1664525)+1013904223)>>>0;let index=n%preset.shots.length;if(index===last&&preset.shots.length>1)index=(index+1)%preset.shots.length;last=index;
-   const shot=preset.shots[index],subject=options.subject||c.fx?.subject;return {id:T.uid('style'),kind:'adjustment',mediaId:null,trackId:track.id,name:shot.name,start:c.start,duration:c.duration,sourceIn:0,linkedId:null,fx:{...T.fxDefault(),scene:{from:subjectSafePose(shot.from,subject),to:subjectSafePose(shot.to,subject),span:c.duration,offset:0,includeLogo:!!options.includeLogo,subjectSafe:!!subject}},styleLocked:false};
+   const shot=preset.shots[index],subject=options.subject||c.fx?.subject;return {id:T.uid('style'),kind:'adjustment',mediaId:null,trackId:track.id,name:shot.name,start:c.start,duration:c.duration,sourceIn:0,linkedId:null,fx:{...T.fxDefault(),scene:{from:baseStylePose(shot.from,subject,options.baseScale??108),to:baseStylePose(shot.to,subject,options.baseScale??108),span:c.duration,offset:0,includeLogo:!!options.includeLogo,subject:subject?structuredClone(subject):null,subjectSafe:!!subject,baseScale:options.baseScale??108}},styleLocked:false};
  });
  if(keep.some(c=>!clips.includes(c)))throw Error('A locked Style segment no longer matches the main cuts. Unlock it before regenerating.');
  q.clips=[...q.clips.filter(c=>c.trackId!==track.id),...preserved,...clips];q.creatorPreset=preset;q.creatorSource=sourceTrack;

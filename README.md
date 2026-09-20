@@ -1,3 +1,13 @@
+# RanCut 0.5.3 — Frame Chooser & Creator Zoom
+
+- Frame chooser inside both crop and protect dialogs: source-time slider, seconds field, Show frame, and ±1 second.
+- Base scene zoom defaults to 108%, adjustable 100–130% in Styles and Auto Edit. Top-anchored framing permits belly cropping; person and background move together.
+- Protect only the head/upper body you want retained. Manual box, not AI tracking. For moving subjects, review several frames.
+- Toolbar simplified: Split, Duplicate, Q/W, Auto Edit, Follow and Fit. Remaining actions and toggles are under More; keyboard shortcuts remain.
+- Existing projects are not silently reframed. Reapply a Style to update unlocked Style segments; manually locked segments are kept.
+- Clean-edge masking preserves body proportions; corrected top/bottom mask orientation.
+- This is source code with GitHub Windows installer workflow, not a prebuilt Windows EXE.
+
 # RanCut 0.5.2 — Clean Edge Framing Preview
 
 Built on 0.4.9. Project Home/recovery, native source reconnect, chroma shader,
