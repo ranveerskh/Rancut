@@ -1,4 +1,4 @@
-# RanCut 0.5.1 validation
+# RanCut 0.5.2 validation
 Date: 2026-09-19. Linux, Node 24, system FFmpeg CPU. Windows CI uses Node 22.
 
 ## Executed
@@ -8,6 +8,11 @@ Date: 2026-09-19. Linux, Node 24, system FFmpeg CPU. Windows CI uses Node 22.
 - Version, lockfile and runtime-package checks passed.
 - SVG rendered into PNG/ICO; icon visually inspected.
 - No production dependency was added for this update.
+
+## 0.5.2 coverage added
+
+- Clean-edge shader semantics: cropped pixels are transparent while source UV coordinates stay unchanged.
+- Frame-preview wiring: dialogs use decoded source frames rather than a WebGL canvas capture.
 
 ## 0.5.1 coverage added
 - Clip duplication/repeat keeps linked A/V together and trims the final repeat.

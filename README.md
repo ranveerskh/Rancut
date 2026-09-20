@@ -1,7 +1,12 @@
-# RanCut 0.5.1 — Creator Framing & Repeat Tools Preview
+# RanCut 0.5.2 — Clean Edge Framing Preview
 
 Built on 0.4.9. Project Home/recovery, native source reconnect, chroma shader,
 Reliable export, experimental Direct export and sleep protection are retained.
+
+## 0.5.2 additions
+
+- Clean-picture edges preserve the original scale and position; they mask unwanted source edges instead of zooming the subject.
+- Crop and protected-person dialogs decode the selected source at the active playhead (or chosen source time in Auto Edit).
 
 ## 0.5.1 additions
 - Duplicate selected clips or linked A/V, repeat a selection to the timeline end,

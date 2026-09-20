@@ -15,7 +15,7 @@ float rawAlpha(vec2 uv){vec4 c=texture2D(tex,uv);float excess=(c.g-max(c.r,c.b))
 float cleanAlpha(vec2 uv){float a=rawAlpha(uv),lo=a;for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++)lo=min(lo,rawAlpha(uv+pixel*vec2(float(x),float(y))));return mix(a,lo,choke);}
 void main(){
  ${compositePass}
- vec2 uv=(v-.5-offset)/(fit*scale)+.5;if(any(lessThan(uv,vec2(0.)))||any(greaterThan(uv,vec2(1.)))){gl_FragColor=vec4(0.);return;}uv=vec2(crop.x,crop.z)+uv*vec2(1.-crop.x-crop.y,1.-crop.z-crop.w);
+ vec2 uv=(v-.5-offset)/(fit*scale)+.5;if(any(lessThan(uv,vec2(0.)))||any(greaterThan(uv,vec2(1.)))){gl_FragColor=vec4(0.);return;}if(uv.x<crop.x||uv.x>1.-crop.y||uv.y<crop.z||uv.y>1.-crop.w){gl_FragColor=vec4(0.);return;}
  vec4 c=texture2D(tex,uv);if(blur>.01){vec2 d=pixel*blur;c=c*.4+(texture2D(tex,uv+vec2(d.x,0.))+texture2D(tex,uv-vec2(d.x,0.))+texture2D(tex,uv+vec2(0.,d.y))+texture2D(tex,uv-vec2(0.,d.y)))*.15;}
  float a=c.a;vec3 rgb=c.rgb;
  if(keyOn){a=cleanAlpha(uv);if(feather>0.){vec2 d=pixel*max(.5,feather);float b=(cleanAlpha(uv+vec2(d.x,0.))+cleanAlpha(uv-vec2(d.x,0.))+cleanAlpha(uv+vec2(0.,d.y))+cleanAlpha(uv-vec2(0.,d.y)))*.25;a=mix(a,b,min(.65,feather*.43));}

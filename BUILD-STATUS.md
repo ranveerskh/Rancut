@@ -1,4 +1,4 @@
-# RanCut 0.5.1 Preview
+# RanCut 0.5.2 Preview
 71/71 automated tests and production build passed.
 Creator workflow, crop/framing and timeline repeat tools are implemented; see README.md and TEST-REPORT.md.
 Windows/RTX/real-browser/long-project verification is pending.
