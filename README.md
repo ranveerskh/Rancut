@@ -1,4 +1,4 @@
-# RanCut 0.5.6 — Original Logo & Subtle Studio Theme
+# RanCut 0.5.7 — Resizable creator workspace
 
 This ZIP contains the complete updated source and Windows installer workflow.
 It is not a prebuilt EXE. Replace the repository contents with the contents of
@@ -6,10 +6,10 @@ the rancut folder, including .github/workflows/build.yml.
 
 ## Brand update
 
-- Supplied logo JPEG is included byte-for-byte as public/brand-original.jpeg.
-- Header, Project Home, About and favicon use that original artwork.
-- Desktop PNG preserves original dimensions. Windows ICO contains proportional,
-  padded size conversions of the same artwork, with no redraw or recolouring.
+- The supplied icon-only artwork is included as public/rancut-icon.png.
+- Header, Project Home, About, favicon and desktop shortcuts use the icon only;
+  the RanCut name is rendered separately in the app header.
+- Windows PNG/ICO assets are proportional size conversions of that supplied icon.
 - Dark navy panels with restrained purple/blue accents on selected controls,
   sliders, Style clips and Export. Audio remains green; missing media remains red.
 - No animated glow, background video, blur effects or additional runtime dependencies.
@@ -40,6 +40,11 @@ the rancut folder, including .github/workflows/build.yml.
 - Trash supports selection, Select all, Restore selected, and confirmed permanent
   deletion of selected projects and their recovery copies. Original media files
   are never deleted.
+- Media and Inspector panels have keyboard-accessible vertical dividers, and the
+  timeline divider keeps pointer capture so all three panel sizes can be adjusted.
+- Auto Edit saves its complete options on the generated project. Opening Auto Edit
+  again loads those options so the crop, framing, style, sound and cut choices can
+  be corrected without starting over.
 
 ## Use the new framing
 
@@ -84,7 +89,7 @@ npm run dist:win
 ```
 
 GitHub Actions also runs these checks, uses --publish never (no GH_TOKEN needed),
-and uploads release/*-Setup.exe. Expected installer: RanCut-0.5.6-Setup.exe.
+and uploads release/*-Setup.exe. Expected installer: RanCut-0.5.7-Setup.exe.
 Install over the existing preview to retain local projects.
 
 ## Validation and limits

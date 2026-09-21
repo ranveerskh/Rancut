@@ -1,6 +1,6 @@
-# RanCut 0.5.6 Preview
+# RanCut 0.5.7 Preview
 
-Original supplied artwork and restrained navy/purple theme. Complete source update with GitHub Windows installer workflow.
+Icon-only supplied artwork, resizable media/Inspector panels and saved Auto Edit refinement. Complete source update with GitHub Windows installer workflow.
 83 automated tests and production build passed.
 18 actual shader frames passed native Mesa/EGL checks; contact sheet in qa/framing.
 Browser visual layout and Windows/RTX/installer checks are not verified here.

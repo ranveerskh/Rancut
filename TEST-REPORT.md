@@ -1,6 +1,6 @@
-# RanCut 0.5.6 validation
+# RanCut 0.5.7 validation
 
-Date: 2026-09-20. Linux, Node 24, system FFmpeg CPU. Windows CI targets Node 22.
+Date: 2026-09-21. Linux, Node 24, system FFmpeg CPU. Windows CI targets Node 22.
 
 ## Executed
 
@@ -16,6 +16,12 @@ Date: 2026-09-20. Linux, Node 24, system FFmpeg CPU. Windows CI targets Node 22.
 - JSX, CSS, static assets and desktop MIME routing build successfully.
 - Full regression suite rerun. Native shader report is retained from the previous release;
   rendering logic did not change. No new browser visual/Windows icon test claimed.
+
+## 0.5.7 additions
+
+- Production build completed after adding real media/Inspector vertical panel dividers.
+- Auto Edit generated projects retain all wizard options for later correction.
+- CI workflow selector no longer depends on a Unicode arrow surviving checkout encoding.
 
 ## Creator workspace coverage
 
