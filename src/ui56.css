@@ -48,7 +48,7 @@
 .statusBar.is-neutral { color: var(--ui56-muted); background: rgba(16, 22, 34, .92); border-bottom-color: var(--ui56-line); }
 
 /* Main work area: more room for the viewer, but the timeline never disappears. */
-.editorGrid { min-height: 0; grid-template-rows: minmax(240px, 1fr) minmax(245px, 34vh) !important; gap: 8px; background: var(--ui56-surface-0); }
+.editorGrid { min-height: 0;  gap: 0; background: var(--ui56-surface-0); }
 .panel, .viewerPanel, .inspector, .timelinePanel { min-width: 0; min-height: 0; border-color: var(--ui56-line); }
 .panelHeader, .inspectorHeader { min-height: 44px; padding: 9px 12px; background: rgba(21, 27, 42, .78); border-bottom-color: var(--ui56-line); }
 .panelBody, .inspectorBody { scrollbar-color: rgba(182,154,255,.45) transparent; scrollbar-width: thin; }
@@ -152,7 +152,7 @@
 @media (max-width: 900px) {
   .topbar { min-height: 54px; }
   .topActions button { padding: 0 8px; }
-  .editorGrid { grid-template-columns: 1fr !important; grid-template-rows: minmax(250px, 1fr) minmax(230px, 38vh) !important; }
+  .editorGrid { grid-template-columns: 1fr !important;  }
   .mediaDivider, .inspectorDivider, .leftPanel, .inspector { display: none !important; }
   .viewerPanel, .timelinePanel { grid-column: 1 !important; }
   .timelineToolbar { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
