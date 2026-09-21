@@ -1,4 +1,4 @@
-/* RanCut 0.5.6 UI pass
+/* RanCut 0.5.7 UI pass
    Presentation-only refinements. Editing state, renderer and keyboard actions
    remain owned by the existing components. */
 
@@ -28,9 +28,9 @@
   border-bottom: 1px solid var(--ui56-line);
 }
 .brand { min-width: 0; gap: 9px; }
-.brandIcon { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; box-shadow: 0 0 0 1px rgba(182,154,255,.3), 0 5px 18px rgba(0,0,0,.24); }
-.brand b { letter-spacing: -.02em; }
-.brand span { color: var(--ui56-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brandIcon { width: 34px; height: 34px; flex: 0 0 34px; border-radius: 9px; object-fit: cover; box-shadow: 0 0 0 1px rgba(182,154,255,.3), 0 5px 18px rgba(0,0,0,.24); }
+.brand b { color: #f7f4ff; font-size: 22px; line-height: 1; letter-spacing: -.045em; font-weight: 850; }
+.brand span { color: var(--ui56-muted); align-self: flex-end; margin-bottom: 1px; font-size: 10px; letter-spacing: 1.25px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .topActions { min-width: 0; gap: 6px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
 .topActions::-webkit-scrollbar { display: none; }
 .topActions button { flex: 0 0 auto; min-height: 34px; border-radius: 8px; border: 1px solid var(--ui56-line); background: rgba(28, 35, 53, .74); color: var(--ui56-text); transition: background .16s ease, border-color .16s ease, transform .16s ease; }
@@ -130,18 +130,31 @@
 .homeEmpty button { border-radius: 8px; background: linear-gradient(135deg, #b69aff, #7e9dff); color: #171226; font-weight: 800; }
 .emptyActions { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 
+/* The media and inspector edges are real grab handles, matching the timeline divider. */
+.sideDivider { grid-row: 1; width: 7px; min-width: 7px; cursor: col-resize; touch-action: none; position: relative; z-index: 8; background: #141b2a; border-inline: 1px solid rgba(177,186,219,.11); }
+.sideDivider::after { content: ''; position: absolute; left: 1px; top: 50%; width: 4px; height: 52px; border-radius: 999px; transform: translateY(-50%); background: rgba(182,154,255,.58); opacity: .7; }
+.sideDivider:hover, .sideDivider:focus-visible { background: #2b3550; outline: none; }
+.sideDivider:hover::after, .sideDivider:focus-visible::after { opacity: 1; background: var(--ui56-accent); }
+.leftPanel { grid-column: 1 !important; }
+.mediaDivider { grid-column: 2; }
+.viewerPanel { grid-column: 3 !important; }
+.inspectorDivider { grid-column: 4; }
+.inspector { grid-column: 5 !important; }
+.timelinePanel { grid-column: 1 / 6 !important; }
+
 /* Avoid controls becoming unusable at 1366px/125% scaling. */
 @media (max-width: 1180px) {
   .brand span { display: none; }
   .saveBadge { display: none; }
   .gpuStatus { order: 0; max-width: 125px; }
-  .editorGrid { grid-template-columns: minmax(185px, 220px) minmax(0, 1fr) minmax(230px, 280px) !important; }
+  .editorGrid { grid-template-columns: minmax(185px, 220px) 7px minmax(0, 1fr) 7px minmax(230px, 280px); }
 }
 @media (max-width: 900px) {
   .topbar { min-height: 54px; }
   .topActions button { padding: 0 8px; }
   .editorGrid { grid-template-columns: 1fr !important; grid-template-rows: minmax(250px, 1fr) minmax(230px, 38vh) !important; }
-  .mediaPanel, .inspector { display: none; }
+  .mediaDivider, .inspectorDivider, .leftPanel, .inspector { display: none !important; }
+  .viewerPanel, .timelinePanel { grid-column: 1 !important; }
   .timelineToolbar { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
   .timelineToolbar .zoomCtl { margin-left: 4px; }
 }
