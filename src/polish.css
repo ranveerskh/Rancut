@@ -63,5 +63,6 @@ button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visi
 .helpDialog nav{display:flex;gap:6px;padding:12px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .helpDialog button{background:#202e3a;border:1px solid #425566;border-radius:6px;color:#e0e8ed;padding:7px 11px}.helpDialog button.active{border-color:#a1e8cd;background:#224338}
 .helpDialog section{padding:10px 24px 20px;font-size:13px;line-height:1.8}.helpDialog li{margin-bottom:6px}
+.licenseBox{padding:14px;background:#0c141d;border:1px solid #344252;border-radius:8px}.licenseBox input{display:block;width:100%;box-sizing:border-box;margin-top:6px;background:#111923;color:#e6edf4;border:1px solid #405464;border-radius:6px;padding:9px;font:inherit}.licenseActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.licenseBox p{margin:10px 0 0;color:#a8bac5}
 @media(max-width:1150px){.brand span{display:none}.gpuStatus{max-width:130px}.topActions{gap:3px}.topActions button{padding:0 7px}.trackToolbar span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.zoomCtl input{width:65px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
