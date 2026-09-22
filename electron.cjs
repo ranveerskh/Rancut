@@ -35,9 +35,12 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
    if(!url)return {configured:false,current:app.getVersion()};
    const response=await fetch(url,{signal:AbortSignal.timeout(10000),redirect:'error'});if(!response.ok)throw Error('Update server unavailable.');
    const text=await response.text();if(text.length>65536)throw Error('Invalid update manifest.');
-   const info=JSON.parse(text);return {configured:true,current:app.getVersion(),latest:info.version,available:newerVersion(info.version,app.getVersion())};
+   const info=JSON.parse(text);if(typeof info.version!=='string')throw Error('Invalid update manifest.');
+   const downloadUrl=releaseUrl(info.downloadUrl||releaseConfig.downloadPage);
+   return {configured:true,current:app.getVersion(),latest:info.version,available:newerVersion(info.version,app.getVersion()),downloadUrl,notes:typeof info.notes==='string'?info.notes:''};
   });
   ipcMain.handle('open-release',async event=>{valid(event);const url=releaseUrl(releaseConfig.downloadPage);if(!url)throw Error('Release page is not configured.');await shell.openExternal(url);});
+  ipcMain.handle('open-update',async(event,url)=>{valid(event);const target=releaseUrl(url||releaseConfig.downloadPage);if(!target)throw Error('Release download is not configured.');await shell.openExternal(target);});
   ipcMain.handle('export-power',(event,active)=>{valid(event);if(active===true)return power.start();power.release();return false;});
   ipcMain.handle('notify-export',event=>{valid(event);if(Notification.isSupported())new Notification({title:'RanCut export complete',body:'Your MP4 is saved in the output folder.'}).show();});
   ipcMain.handle('remember-media',async(event,filePath)=>{valid(event);if(typeof filePath!=='string'||!path.isAbsolute(filePath))throw Error('No local file path.');

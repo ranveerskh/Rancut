@@ -3,6 +3,7 @@ contextBridge.exposeInMainWorld('rancut',{
  desktop:true,
  checkUpdates:()=>ipcRenderer.invoke('check-updates'),
  openRelease:()=>ipcRenderer.invoke('open-release'),
+ openUpdate:url=>ipcRenderer.invoke('open-update',url),
  filePath:file=>webUtils.getPathForFile(file),
  rememberFile:file=>ipcRenderer.invoke('remember-media',webUtils.getPathForFile(file)),
  reconnect:items=>ipcRenderer.invoke('reconnect-media',items),

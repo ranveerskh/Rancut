@@ -1,4 +1,4 @@
 {
-  "manifestUrl": null,
-  "downloadPage": null
+  "manifestUrl": "https://raw.githubusercontent.com/ranveerskh/Rancut/main/release-manifest.json",
+  "downloadPage": "https://github.com/ranveerskh/Rancut/releases/latest"
 }
