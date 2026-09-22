@@ -41,13 +41,24 @@ async function request(action, extra = {}) {
       error.code = data.code;
       throw error;
     }
+    if (!data || data.ok !== true ||
+        (action === 'consume_trial' && typeof data.allowed !== 'boolean') ||
+        (action === 'license_status' && typeof data.active !== 'boolean') ||
+        (action === 'activate' && (!data.activationId || !data.expiresAt || !Number.isFinite(Date.parse(data.expiresAt))))) {
+      throw new Error('Invalid response from license service. Please try again.');
+    }
     return data;
   } finally {
     clearTimeout(timer);
   }
 }
 
-export function getSavedLicenseKey() { return store().getItem(SAVED_LICENSE_KEY) || ''; }
+// Help can render without browser storage. Authorization still requires
+// persistent storage through installationId(); it never falls back to access.
+export function getSavedLicenseKey() {
+  try { return globalThis.localStorage?.getItem(SAVED_LICENSE_KEY) || ''; }
+  catch { return ''; }
+}
 export function clearSavedLicenseKey() { store().removeItem(SAVED_LICENSE_KEY); }
 export function consumeTrialAutoEdit() { return request('consume_trial'); }
 
@@ -56,7 +67,7 @@ export async function activateLicense(licenseKey, deviceLabel = 'RanCut Windows'
   if (!key) throw new Error('Enter a license key first.');
   const result = await request('activate', { licenseKey: key, deviceLabel });
   store().setItem(SAVED_LICENSE_KEY, key);
-  return result;
+  return { ...result, active: true };
 }
 
 export function checkLicenseStatus() {
