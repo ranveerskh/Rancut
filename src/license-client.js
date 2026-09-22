@@ -1,7 +1,7 @@
 const LICENSE_API = 'https://ifeuwmodcrjyjzkunfyr.supabase.co/functions/v1/license-api';
 const INSTALLATION_KEY = 'rancut.installation.id';
 const SAVED_LICENSE_KEY = 'rancut.license.key';
-const APP_VERSION = '0.5.8';
+const APP_VERSION = '0.5.9';
 
 function store() {
   if (!globalThis.localStorage) throw new Error('Local app storage is unavailable.');
@@ -44,7 +44,8 @@ async function request(action, extra = {}) {
     if (!data || data.ok !== true ||
         (action === 'consume_trial' && typeof data.allowed !== 'boolean') ||
         (action === 'license_status' && typeof data.active !== 'boolean') ||
-        (action === 'activate' && (!data.activationId || !data.expiresAt || !Number.isFinite(Date.parse(data.expiresAt))))) {
+        (action === 'activate' && (!data.activationId || !data.expiresAt || !Number.isFinite(Date.parse(data.expiresAt)))) ||
+        (action === 'submit_feedback' && (!data.feedback || typeof data.feedback.id !== 'string'))) {
       throw new Error('Invalid response from license service. Please try again.');
     }
     return data;
@@ -74,6 +75,23 @@ export function checkLicenseStatus() {
   const key = getSavedLicenseKey();
   if (!key) return Promise.resolve({ ok: true, active: false, plan: null, expiresAt: null });
   return request('license_status', { licenseKey: key });
+}
+
+export async function submitFeedback({ type = 'Feature request', message = '', diagnostics = {} } = {}) {
+  const feedbackType = type === 'Bug report' ? 'bug' : type === 'Feature request' ? 'feature' : '';
+  const detail = String(message || '').trim();
+  if (!feedbackType) throw new Error('Choose Feature request or Bug report.');
+  if (detail.length < 5) throw new Error('Please add a little more detail before submitting.');
+  const context = {
+    version: APP_VERSION,
+    encoder: typeof diagnostics.encoder === 'string' ? diagnostics.encoder.slice(0, 80) : null,
+    mode: typeof diagnostics.mode === 'string' ? diagnostics.mode.slice(0, 40) : null,
+    renderer: typeof diagnostics.renderer === 'string' ? diagnostics.renderer.slice(0, 160) : null,
+    clips: Number.isFinite(diagnostics.clips) ? diagnostics.clips : null,
+    missing: Number.isFinite(diagnostics.missing) ? diagnostics.missing : null,
+  };
+  const result = await request('submit_feedback', { feedbackType, message: detail.slice(0, 4000), appContext: context });
+  return result.feedback;
 }
 
 export async function authorizeAutoEdit() {
