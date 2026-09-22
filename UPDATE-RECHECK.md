@@ -1,19 +1,24 @@
-# Installing this source correction
+# Installing RanCut 0.5.9 source
 
-This ZIP contains the full RanCut editor source, with index.html, package.json,
-src/, tests/ and the Windows build workflow at the root. It is not the separate
-RanCut Platform admin website and does not require replacing that website.
+This ZIP is the complete RanCut editor source with its existing Windows build
+workflow. Extract its contents at the repository root; do not nest this folder
+inside `src/`. The ZIP is not a prebuilt EXE.
 
-Replace the matching files in the RanCut editor repository with these contents.
-Keep the root directory structure; do not place this whole folder inside src/.
-Commit to run the existing Windows workflow. The EXE is created by that workflow,
-not included in this source ZIP.
+## Build
 
-Changed runtime file: src/license-client.js.
-Changed tests: tests/workflow-ui.test.js and tests/project-home.test.js.
-Added tests: tests/license-client.test.js.
-Updated validation: TEST-REPORT.md and this note.
+```sh
+npm ci
+npm test
+npm run dist:win
+```
 
-The earlier workflow mock correction is included, so no separate copy/paste is needed.
-Version remains 0.5.8 to match the existing release configuration.
-See TEST-REPORT.md for executed checks and outstanding limitations.
+## Companion Platform update
+
+Feedback submission needs the matching RanCut Platform package deployed first:
+
+1. Run its feedback SQL migration once in Supabase.
+2. Deploy its updated `license-api` Edge Function.
+3. Publish its updated `admin/` folder to the private Platform site.
+
+Without that companion deployment, Feedback correctly shows the Platform error
+instead of silently saving a local draft.
