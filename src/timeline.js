@@ -9,7 +9,10 @@ export const end=c=>c.start+c.duration;
 export const quant=(t,fps)=>Math.round(t*fps)/fps;
 export const EPS=1e-7;
 export const fxDefault=()=>({chroma:{enabled:false,engine:'sample',key:'#13470e',threshold:.14,softness:.4,choke:.35,feather:.5,spill:.94,decontam:1,matte:false},color:{exposure:0,contrast:0,saturation:100,temp:0,tint:0},transform:{x:0,y:0,scale:100,opacity:100},crop:{left:0,right:0,top:0,bottom:0},blur:0,gainDb:0});
-export const emptyProject=()=>({schema:1,version:VERSION,name:'Untitled',fps:30,width:1920,height:1080,tracks:[{id:'V1',type:'video',hidden:false,muted:false,locked:false},{id:'A1',type:'audio',hidden:false,muted:false,locked:false}],clips:[],markers:[],media:[]});
+// New projects start in an "automatic" canvas mode.  The first video import
+// can then adopt its native dimensions (including UHD/4K); choosing a canvas
+// manually switches this flag off and keeps the user's decision stable.
+export const emptyProject=()=>({schema:1,version:VERSION,name:'Untitled',fps:30,width:1920,height:1080,formatAuto:true,tracks:[{id:'V1',type:'video',hidden:false,muted:false,locked:false},{id:'A1',type:'audio',hidden:false,muted:false,locked:false}],clips:[],markers:[],media:[]});
 export const duration=p=>Math.max(0,...p.clips.map(end));
 export const activeAt=(p,t)=>p.clips.filter(c=>t>=c.start-EPS&&t<end(c)-EPS);
 export const track=p=>new Map(p.tracks.map(t=>[t.id,t]));
