@@ -1,7 +1,7 @@
 const LICENSE_API = 'https://ifeuwmodcrjyjzkunfyr.supabase.co/functions/v1/license-api';
 const INSTALLATION_KEY = 'rancut.installation.id';
 const SAVED_LICENSE_KEY = 'rancut.license.key';
-const APP_VERSION = '0.5.9';
+const APP_VERSION = '0.6.0';
 
 function store() {
   if (!globalThis.localStorage) throw new Error('Local app storage is unavailable.');
@@ -25,7 +25,7 @@ function installationId() {
   return id;
 }
 
-async function request(action, extra = {}) {
+export async function request(action, extra = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
@@ -77,7 +77,7 @@ export function checkLicenseStatus() {
   return request('license_status', { licenseKey: key });
 }
 
-export async function submitFeedback({ type = 'Feature request', message = '', diagnostics = {} } = {}) {
+export async function submitFeedback({ type = 'Feature request', message = '', diagnostics = {}, submissionId } = {}) {
   const feedbackType = type === 'Bug report' ? 'bug' : type === 'Feature request' ? 'feature' : '';
   const detail = String(message || '').trim();
   if (!feedbackType) throw new Error('Choose Feature request or Bug report.');
@@ -90,11 +90,12 @@ export async function submitFeedback({ type = 'Feature request', message = '', d
     clips: Number.isFinite(diagnostics.clips) ? diagnostics.clips : null,
     missing: Number.isFinite(diagnostics.missing) ? diagnostics.missing : null,
   };
-  const result = await request('submit_feedback', { feedbackType, message: detail.slice(0, 4000), appContext: context });
+  const result = await request('submit_feedback', { feedbackType, message: detail.slice(0, 4000), appContext: context, submissionId });
   return result.feedback;
 }
 
 export async function authorizeAutoEdit() {
+  await globalThis.window?.rancut?.assertUpdateAllowed?.();
   const status = await checkLicenseStatus();
   if (status.active) return { ...status, allowed: true, licensed: true };
   const trial = await consumeTrialAutoEdit();
