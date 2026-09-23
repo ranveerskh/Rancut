@@ -1,38 +1,15 @@
-# RanCut 0.5.9 — validation
+# RanCut 0.6.0 validation — 2026-09-22
 
-Executed 2026-09-22 on Linux with Node 24.19.0.
+Executed on Linux with Node 24.19.0 using the available local dependency installation.
 
-## Passed
+- `node --test tests/*.test.js`: 104 tests; 97 passed, 0 failed, 7 skipped.
+- The 7 skipped tests need a working FFmpeg executable for real encode/proxy/export validation. Windows CI runs the FFmpeg preflight in `npm test` and must pass before building.
+- `npm run build`: Vite production build passed (1619 transformed modules).
+- Platform `node --test tests/*.test.cjs`: 2 passed, 0 failed.
+- Electron/preload and admin JavaScript syntax checked; Edge TypeScript transpile/bundle passed.
 
-```sh
-node --test tests/*.test.js
-```
+New checks cover update deadlines, optional releases, untrusted redirect rejection, cancellation, bad installer bytes, post-download tampering, offline cached update policy, feedback persistence/retry with a stable submission ID, omission of media/license secrets, partial backend availability, preserved admin drafts, required-release selection and unauthorized admin requests.
 
-- 90 passed
-- 0 failed
-- 7 skipped because this environment does not expose a local FFmpeg binary for
-  real proxy / MP4 / 4K encode tests
+The installer fixtures are mocked bytes, not a Windows installation. No Windows installer was built here; no real Windows updater, UAC, GPU, live browser rendering, Supabase migration or hosted Netlify feedback test was performed. Existing save-close handshake is reused before opening the installer. Test these on Windows after building, then complete backend deployment and end-to-end checks.
 
-The new regression test verifies a Feature request sends only the typed request
-and bounded app context to `submit_feedback`; it does not send arbitrary
-diagnostics. Existing Auto Edit, license, UI, project, framing and export-unit
-tests remain green.
-
-```sh
-npm run build
-```
-
-Vite production build passed for `rancut@0.5.9`.
-
-## Platform companion checks
-
-- `admin/admin.js` passes `node --check`.
-- The SQL migration and Edge Function were prepared locally, but this package
-  does not claim a live Supabase/Netlify deployment test. Run the three steps
-  in the matching Platform package's `FEEDBACK-SETUP.md` before using Feedback.
-
-## Remaining device checks
-
-Build/install the Windows NSIS installer and test a real 4K source, a real
-feedback submission, and the Platform inbox on your own deployment before a
-public release.
+No live SQL, Edge Function, Netlify or GitHub deployment was performed. SHA-256 verification is not publisher code signing and does not make a local client tamper-proof.

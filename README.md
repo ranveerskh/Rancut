@@ -1,10 +1,14 @@
-# RanCut 0.5.9 Preview
+# RanCut 0.6.0 Preview
 
-Complete source, built frontend and Windows installer workflow. This ZIP is NOT a prebuilt EXE. Copy the ZIP root contents into your repository, including .github/workflows/build.yml. Back up project JSON before upgrading.
+Complete source, built frontend and Windows installer workflow. This ZIP is NOT a prebuilt EXE. Copy the editor folder contents into your repository, including .github/workflows/build.yml. Back up project JSON before upgrading.
 
-## Updated
+## New in 0.6.0
 
-- Feature requests and bug reports now submit to the protected RanCut Platform Feedback inbox instead of downloading a local text draft. The Platform database/function update must be deployed first.
+Feedback retry/outbox, direct verified Windows downloads, companion Release Manager and required-update grace policy. See RELEASE-NOTES-0.6.0.md. Install the editor first; deploy the included SQL/Edge changes later. Missing backend services display setup pending.
+
+## Retained editor features
+
+- Feature requests and bug reports now submit to the protected RanCut Platform Feedback inbox instead of downloading a local text draft. The Platform database/function update is needed before live feedback can be delivered; the editor can be installed first.
 - Help & About now keeps its footer visible and its numbered Quick Start steps correctly aligned at all normal desktop window heights.
 - Narrow Media-panel tabs use a clear two-row grid instead of colliding text.
 - Supplied R/play artwork preserved, with transparent exterior corners. Icon-only desktop, Home, About and favicon; separate aligned RanCut wordmark.
@@ -33,8 +37,8 @@ npm test
 npm run dist:win
 ```
 
-GitHub Actions tests and builds RanCut-0.5.9-Setup.exe with --publish never. Install over the current preview. Windows may cache an old shortcut icon; recreate the shortcut after installing if needed.
+GitHub Actions tests and builds RanCut-0.6.0-Setup.exe with --publish never. Install over the current preview. Windows may cache an old shortcut icon; recreate the shortcut after installing if needed.
 
 Original logo: public/rancut-icon.png. App: public/brand-icon.png. Installer: assets/icon.ico. Optional scripts/render-brand.cjs needs Sharp as a QA-only tool, not a runtime dependency.
 
-Read TEST-REPORT.md for validation and limitations. No new export-speed guarantee. Subscriptions, rewarded ads, live support and production release hosting are not connected.
+Read TEST-REPORT.md for validation and limitations. No new export-speed guarantee. Existing license activation remains connected to your endpoint. New feedback/release backend changes and Windows code signing are not deployed by this ZIP.

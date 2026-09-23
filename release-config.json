@@ -1,4 +1,3 @@
 {
-  "manifestUrl": "https://raw.githubusercontent.com/ranveerskh/Rancut/main/release-manifest.json",
-  "downloadPage": "https://github.com/ranveerskh/Rancut/releases/latest"
+  "apiUrl": "https://ifeuwmodcrjyjzkunfyr.supabase.co/functions/v1/license-api"
 }
