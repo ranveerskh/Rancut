@@ -1,10 +1,10 @@
-# RanCut 0.6.0 Preview
+# RanCut 0.6.1 Preview
 
-Complete source, built frontend and Windows installer workflow. This ZIP is NOT a prebuilt EXE. Copy the editor folder contents into your repository, including .github/workflows/build.yml. Back up project JSON before upgrading.
+Complete source, built frontend and Windows installer workflow. This ZIP is NOT a prebuilt EXE. Copy the editor folder contents into your repository, including `.github/workflows/publish-installer.yml`. Back up project JSON before upgrading.
 
-## New in 0.6.0
+## New in 0.6.1
 
-Feedback retry/outbox, direct verified Windows downloads, companion Release Manager and required-update grace policy. See RELEASE-NOTES-0.6.0.md. Install the editor first; deploy the included SQL/Edge changes later. Missing backend services display setup pending.
+Feedback retry/outbox, direct verified Windows downloads, companion Release Manager and required-update grace policy. See RELEASE-NOTES-0.6.1.md. Install the editor first; deploy the included SQL/Edge changes later. Missing backend services display setup pending.
 
 ## Retained editor features
 
@@ -37,8 +37,12 @@ npm test
 npm run dist:win
 ```
 
-GitHub Actions tests and builds RanCut-0.6.0-Setup.exe with --publish never. Install over the current preview. Windows may cache an old shortcut icon; recreate the shortcut after installing if needed.
+GitHub Actions tests and builds RanCut-0.6.1-Setup.exe with --publish never. Install over the current preview. Windows may cache an old shortcut icon; recreate the shortcut after installing if needed.
 
 Original logo: public/rancut-icon.png. App: public/brand-icon.png. Installer: assets/icon.ico. Optional scripts/render-brand.cjs needs Sharp as a QA-only tool, not a runtime dependency.
 
 Read TEST-REPORT.md for validation and limitations. No new export-speed guarantee. Existing license activation remains connected to your endpoint. New feedback/release backend changes and Windows code signing are not deployed by this ZIP.
+
+## Update channel
+
+The installed app always reports its local version even when no release exists. For an optional update, the app first asks the platform and then reads the latest public GitHub release metadata asset automatically. The GitHub workflow publishes `release-metadata.json` beside the EXE. Release Manager is still used when you need an admin-controlled required update and 30-day policy.

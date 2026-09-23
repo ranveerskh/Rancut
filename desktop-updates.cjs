@@ -4,19 +4,49 @@ const {createReadStream}=require('node:fs');
 const {createHash}=require('node:crypto');
 const {validateRelease,policy}=require('./update-policy.cjs');
 
-module.exports=function createUpdater({version,userData,downloads,endpoint,notify=()=>{},fetchImpl=fetch}){
+module.exports=function createUpdater({version,userData,downloads,endpoint,githubRepo='ranveerskh/Rancut',notify=()=>{},fetchImpl=fetch}){
  const cache=path.join(userData,'update-policy.json');let release=null,required=null,lastClock=0,controller=null,verified=null;
- let state={phase:'idle',received:0,total:0,error:''};let loaded=false;
+ let state={phase:'idle',received:0,total:0,error:'',releaseState:'unknown',source:'none'};let loaded=false;
  const emit=patch=>{state={...state,...patch};notify(snapshot());};
  function snapshot(){const now=Math.max(Date.now(),lastClock);return {...state,current:version,latest:release?.version,release,...policy(version,release,now),blocked:policy(version,required,now).blocked,warning:policy(version,required,now).warning,daysRemaining:policy(version,required,now).daysRemaining,requiredVersion:required?.version};}
  async function init(){if(loaded)return;loaded=true;try{const saved=JSON.parse(await fs.readFile(cache,'utf8'));release=saved.release?validateRelease(saved.release):null;required=saved.required?validateRelease(saved.required):null;lastClock=Number(saved.lastClock)||0;}catch{} }
  async function save(){lastClock=Math.max(lastClock,Date.now());await fs.mkdir(userData,{recursive:true});const temp=cache+'.tmp';await fs.writeFile(temp,JSON.stringify({release,required,lastClock}));await fs.rename(temp,cache);}
+ async function githubLatest(){
+  const apiUrl=`https://api.github.com/repos/${githubRepo}/releases/latest`;
+  const result=await fetchImpl(apiUrl,{headers:{Accept:'application/vnd.github+json','User-Agent':`RanCut/${version}`},signal:AbortSignal.timeout(12000)});
+  if(!result.ok)throw Error('No public GitHub release is available.');
+  const data=await result.json();
+  const assets=Array.isArray(data.assets)?data.assets:[];
+  const metadataAsset=assets.find(asset=>asset?.name==='release-metadata.json');
+  if(!metadataAsset?.browser_download_url)throw Error('Latest GitHub release has no release metadata.');
+  const metadataResponse=await fetchImpl(metadataAsset.browser_download_url,{headers:{Accept:'application/octet-stream','User-Agent':`RanCut/${version}`},signal:AbortSignal.timeout(12000)});
+  if(!metadataResponse.ok)throw Error('Release metadata could not be read.');
+  const metadata=await metadataResponse.json();
+  const exe=assets.find(asset=>typeof asset?.name==='string'&&/\.exe$/i.test(asset.name));
+  const release=validateRelease({
+    ...metadata,
+    version:String(metadata.version||String(data.tag_name||'').replace(/^v/i,'')),
+    downloadUrl:String(metadata.downloadUrl||exe?.browser_download_url||''),
+    publishedAt:String(metadata.publishedAt||data.published_at||data.created_at||''),
+    required:false,
+  });
+  if(!release||!release.version)return null;
+  return release;
+ }
  async function check(){await init();try{
   const res=await fetchImpl(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'public_release',appVersion:version}),signal:AbortSignal.timeout(12000)});
   const body=await res.json();if(!res.ok||body.ok!==true)throw Error(body.message||'Update service unavailable.');
-  if(body.release){release=validateRelease(body.release);required=body.requiredRelease?validateRelease(body.requiredRelease):null;await save();emit({error:''});}
-  else emit({error:'No installer published yet. Release Manager setup is pending.'});
- }catch(e){emit({error:'Update connection pending: '+e.message});}return snapshot();}
+  if(body.release){release=validateRelease(body.release);required=body.requiredRelease?validateRelease(body.requiredRelease):null;await save();emit({error:'',releaseState:'published',source:'platform'});}
+  else {
+    // The platform controls required deadlines. When it has no release row,
+    // use the public GitHub release as an optional update source.
+    try{
+      const github=await githubLatest();
+      if(github&&require('./update-policy.cjs').compare(github.version,version)>0){release=github;required=null;await save();emit({error:'',releaseState:'published',source:'github'});}
+      else emit({error:'',releaseState:release?'cached':'none',source:release?'cache':'none'});
+    }catch{emit({error:'',releaseState:release?'cached':'none',source:release?'cache':'none'});}
+  }
+ }catch(e){emit({error:'Update connection pending: '+e.message,releaseState:release?'cached':'offline'});}return snapshot();}
  async function status(){await init();return snapshot();}
  async function assertAllowed(){await init();await save();if(snapshot().blocked)throw Error('This version is over 30 days behind a required update. Download the update to use Auto Edit. Your projects and exports remain available.');return true;}
  async function download(){await init();if(controller)throw Error('Download already running.');if(!release||!snapshot().available)throw Error('No newer installer is ready.');

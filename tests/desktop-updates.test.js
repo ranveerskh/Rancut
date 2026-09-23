@@ -9,13 +9,13 @@ const require=createRequire(import.meta.url),createUpdater=require('../desktop-u
 const {policy,validateRelease}=require('../update-policy.cjs');
 const bytes=Buffer.from('MZ installer fixture'),DAY=86400000;
 const release={version:'0.7.0',downloadUrl:'https://github.com/ranveerskh/Rancut/releases/download/v0.7.0/RanCut-0.7.0-Setup.exe',sha256:createHash('sha256').update(bytes).digest('hex'),size:bytes.length,publishedAt:new Date(Date.now()-31*DAY).toISOString(),required:true};
-async function setup(t,fetchImpl){const dir=await mkdtemp(path.join(tmpdir(),'rancut-updates-'));t.after(()=>rm(dir,{recursive:true,force:true}));return {dir,up:createUpdater({version:'0.6.0',userData:dir,downloads:dir,endpoint:'https://example.test',fetchImpl})};}
+async function setup(t,fetchImpl){const dir=await mkdtemp(path.join(tmpdir(),'rancut-updates-'));t.after(()=>rm(dir,{recursive:true,force:true}));return {dir,up:createUpdater({version:'0.6.1',userData:dir,downloads:dir,endpoint:'https://example.test',fetchImpl})};}
 const metadata=()=>Response.json({ok:true,release,requiredRelease:release});
 test('required update grace has exact boundaries and optional releases never block',()=>{
  const start=Date.parse(release.publishedAt);
- for(const [day,warning,blocked] of [[6,false,false],[7,true,false],[29,true,false],[30,true,true]]){const p=policy('0.6.0',release,start+day*DAY);assert.equal(p.warning,warning);assert.equal(p.blocked,blocked);}
+ for(const [day,warning,blocked] of [[6,false,false],[7,true,false],[29,true,false],[30,true,true]]){const p=policy('0.6.1',release,start+day*DAY);assert.equal(p.warning,warning);assert.equal(p.blocked,blocked);}
  assert.equal(policy('0.7.0',release,start+31*DAY).blocked,false);
- assert.equal(policy('0.6.0',{...release,required:false},start+50*DAY).blocked,false);
+ assert.equal(policy('0.6.1',{...release,required:false},start+50*DAY).blocked,false);
  assert.throws(()=>validateRelease({...release,downloadUrl:'https://evil.test/setup.exe'}));
  assert.throws(()=>validateRelease({...release,sha256:'bad'}));
 });
@@ -39,7 +39,26 @@ test('download can be cancelled and partial bytes are removed',async t=>{
 });
 test('required policy survives offline restart; missing backend does not invent a lock',async t=>{
  const {up,dir}=await setup(t,async()=>metadata());await up.check();
- const offline=createUpdater({version:'0.6.0',userData:dir,downloads:dir,endpoint:'https://example.test',fetchImpl:async()=>{throw Error('offline');}});
+ const offline=createUpdater({version:'0.6.1',userData:dir,downloads:dir,endpoint:'https://example.test',fetchImpl:async()=>{throw Error('offline');}});
  assert.equal((await offline.check()).blocked,true);await assert.rejects(offline.assertAllowed(),/30 days/);
  const fresh=await setup(t,async()=>{throw Error('not deployed');});assert.equal((await fresh.up.check()).blocked,false);assert.equal(await fresh.up.assertAllowed(),true);
+});
+
+test('empty release channel reports current version instead of setup failure',async t=>{
+ const {up}=await setup(t,async(url,options)=>Response.json({ok:true,release:null,requiredRelease:null}));
+ const result=await up.check();assert.equal(result.releaseState,'none');assert.equal(result.error,'');assert.equal(result.available,false);assert.equal(result.current,'0.6.1');
+});
+
+test('public GitHub metadata is used as an optional update fallback',async t=>{
+ const metadataRelease={...release,version:'0.7.0',required:false,publishedAt:new Date().toISOString()};
+ const github={tag_name:'v0.7.0',published_at:metadataRelease.publishedAt,assets:[
+  {name:'release-metadata.json',browser_download_url:'https://github.com/ranveerskh/Rancut/releases/download/v0.7.0/release-metadata.json'},
+  {name:'RanCut-0.7.0-Setup.exe',browser_download_url:metadataRelease.downloadUrl}
+ ]};
+ const {up}=await setup(t,async(url,options)=>{
+  if(options?.method==='POST')return Response.json({ok:true,release:null,requiredRelease:null});
+  if(String(url).includes('api.github.com'))return Response.json(github);
+  return Response.json({version:'0.7.0',downloadUrl:metadataRelease.downloadUrl,sha256:metadataRelease.sha256,size:metadataRelease.size});
+ });
+ const result=await up.check();assert.equal(result.source,'github');assert.equal(result.latest,'0.7.0');assert.equal(result.available,true);assert.equal(result.requiredVersion,undefined);
 });

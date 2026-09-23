@@ -35,7 +35,7 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
   window.webContents.on('will-prevent-unload',event=>event.preventDefault());
   window.on('close',event=>{if(allowClose)return;event.preventDefault();if(waiting)return;waiting=true;window.webContents.send('prepare-close');closeTimer=setTimeout(()=>{waiting=false;pendingInstall=null;dialog.showMessageBox(window,{type:'warning',message:'RanCut has not finished saving. The window has been kept open.',detail:'Save a project file before trying to close again.'});},15000);});
   const valid=event=>{if(event.sender!==window?.webContents||event.senderFrame!==window.webContents.mainFrame)throw Error('Invalid window');};
-  const updater=require('./desktop-updates.cjs')({version:app.getVersion(),userData:app.getPath('userData'),downloads:app.getPath('downloads'),endpoint:releaseConfig.apiUrl,notify:state=>{if(window&&!window.isDestroyed())window.webContents.send('update-progress',state);}});
+  const updater=require('./desktop-updates.cjs')({version:app.getVersion(),userData:app.getPath('userData'),downloads:app.getPath('downloads'),endpoint:releaseConfig.apiUrl,githubRepo:releaseConfig.githubRepo,notify:state=>{if(window&&!window.isDestroyed())window.webContents.send('update-progress',state);}});
   await updater.init();
   ipcMain.handle('check-updates',async event=>{valid(event);return updater.check();});
   ipcMain.handle('update-status',async event=>{valid(event);return updater.status();});
@@ -44,7 +44,7 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
   ipcMain.handle('cancel-update',event=>{valid(event);updater.cancel();});
   ipcMain.handle('install-update',async event=>{valid(event);if(waiting)throw Error('Waiting for the project to finish saving.');if(process.platform!=='win32')throw Error('Windows installer requires Windows.');await updater.installer();pendingInstall=async()=>{const installer=await updater.installer();const error=await shell.openPath(installer);if(error)throw Error(error);};window.close();return true;});
   window.webContents.once('did-finish-load',()=>{updater.check().catch(()=>{});});
-  const updateTimer=setInterval(()=>updater.check().catch(()=>{}),6*60*60*1000);updateTimer.unref();
+  const updateTimer=setInterval(()=>updater.check().catch(()=>{}),24*60*60*1000);updateTimer.unref();
   ipcMain.handle('export-power',(event,active)=>{valid(event);if(active===true)return power.start();power.release();return false;});
   ipcMain.handle('notify-export',event=>{valid(event);if(Notification.isSupported())new Notification({title:'RanCut export complete',body:'Your MP4 is saved in the output folder.'}).show();});
   ipcMain.handle('remember-media',async(event,filePath)=>{valid(event);if(typeof filePath!=='string'||!path.isAbsolute(filePath))throw Error('No local file path.');

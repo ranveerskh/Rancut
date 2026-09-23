@@ -1,1 +1,1 @@
-See TEST-REPORT.md for the current 0.6.0 validation results.
+See TEST-REPORT.md for the current 0.6.1 validation results.

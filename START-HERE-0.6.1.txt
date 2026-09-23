@@ -1,0 +1,31 @@
+RanCut 0.6.1 — AUTO-UPDATE TEST SETUP
+=====================================
+
+This is source, not a prebuilt EXE. Back up your project JSON files first.
+
+1. Copy the CONTENTS of editor/ into the root of your RanCut GitHub repository.
+   Keep .github/workflows/publish-installer.yml. Do not upload the outer ZIP
+   folder as the repository root.
+2. On Windows/Actions run npm ci, npm test, npm run build and npm run dist:win.
+   The included workflow creates a DRAFT GitHub Release with the EXE and
+   release-metadata.json. Test the installer, then publish the draft publicly.
+3. Deploy backend/supabase/functions/license-api/index.ts to the existing
+   Supabase license-api function. This is required for a 0.6.0 install to
+   discover its first GitHub update without a manual Release Manager row.
+   Keep Verify JWT disabled. The SQL migrations are already safe to rerun;
+   do not put a service-role key in the app or repository.
+4. Install RanCut 0.6.1 and open Help → Updates. It checks at startup, once
+   every 24 hours, and from Check for updates. With no newer release it shows
+   “You’re up to date”; with a published GitHub release it shows Download.
+5. To test 0.6.0 → 0.6.1, keep 0.6.0 installed, publish the 0.6.1 draft,
+   deploy the updated Edge Function, then click Help → Updates → Check for
+   updates in 0.6.0. Download verification checks the GitHub URL, byte size,
+   SHA-256 and Windows EXE header before offering Install now.
+
+Release Manager remains available for required updates, deadlines and admin
+history. Optional GitHub releases are auto-linked; no installer is uploaded
+to Supabase. Required policy is unchanged: warning after 7 days, Auto Edit
+restriction after 30 days for older versions.
+
+Validation: editor 99 passed, 0 failed, 7 FFmpeg-dependent tests skipped;
+platform 2 passed; frontend build and Edge Function bundle passed.
