@@ -2,7 +2,7 @@ import {validateFraming} from './framing.js';
 import {validPose} from './scene-core.js';
 import {validateTransition} from './creator.js';
 import {soundBytes} from './sounds.js';
-export const VERSION='0.6.1';
+export const VERSION='0.6.2';
 export const uid=(p='c')=>`${p}_${crypto.randomUUID()}`;
 export const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 export const end=c=>c.start+c.duration;
@@ -61,6 +61,19 @@ export function removeRanges(p,raw,{ripple=true,ids=null}={}){
  return finish(p,after);
 }
 export function splitClips(p,id,time){const ids=pair(p,id),t=quant(time,p.fps),out=[];for(const c of p.clips){if(ids.includes(c.id)&&t>c.start+EPS&&t<end(c)-EPS)out.push(piece(c,c.start,t,c.start,p),piece(c,t,end(c),t,p));else out.push({...c,_old:c.id,_a:c.start,_b:end(c)});}return finish(p,{...p,clips:relink(p,out)});}
+export function splitSelection(p,ids,time){
+ const at=quant(time,p.fps),chosen=new Set(ids.flatMap(id=>pair(p,id)));
+ if(!chosen.size)throw Error('Select a clip to split.');
+ const targets=p.clips.filter(c=>chosen.has(c.id)&&at>c.start+EPS&&at<end(c)-EPS);
+ if(!targets.length)throw Error('Place the playhead inside a selected clip.');
+ const done=new Set();let next=p;
+ for(const c of targets){
+  if(done.has(c.id))continue;
+  const linked=pair(p,c.id);if(linked.some(id=>track(p).get(p.clips.find(x=>x.id===id)?.trackId)?.locked))throw Error('Unlock linked tracks before splitting.');
+  linked.forEach(id=>done.add(id));next=splitClips(next,c.id,at);
+ }
+ return next;
+}
 export function moveClip(p,id,target,start){const c=p.clips.find(c=>c.id===id);if(!c)return p;const source=track(p).get(c.trackId),dest=track(p).get(target);if(source.type!==dest?.type)throw Error('Move clips between tracks of the same type.');const delta=quant(Math.max(0,start),p.fps)-c.start,ids=pair(p,id);return finish(p,{...p,clips:p.clips.map(x=>ids.includes(x.id)?{...x,start:x.start+delta,trackId:x.id===id?target:x.trackId}:x)});}
 export function deleteClips(p,id){const ids=pair(p,id);return finish(p,{...p,clips:p.clips.filter(c=>!ids.includes(c.id))});}
 export function trimClip(p,id,edge,time,ripple){const c=p.clips.find(c=>c.id===id);if(!c)return p;const t=quant(time,p.fps),ids=pair(p,id);if(edge==='left'&&t>c.start&&t<end(c))return removeRanges(p,[[c.start,t]],{ripple,ids});if(edge==='right'&&t>c.start&&t<end(c))return removeRanges(p,[[t,end(c)]],{ripple,ids});throw Error('Place the trim inside this clip.');}
@@ -84,7 +97,7 @@ export function resizeClip(p,id,edge,time,ripple){
  return finish(p,{...p,clips:relink(p,clips),markers:ripple?p.markers.map(m=>({...m,time:m.time>=oldEnd?m.time+delta:m.time})):p.markers});
 }
 export function addTrack(p,type){const prefix=type==='audio'?'A':type==='adjustment'?'ADJ':'V';const nums=p.tracks.filter(t=>t.id.startsWith(prefix)).map(t=>Number(t.id.slice(prefix.length))||0);const t={id:prefix+(Math.max(0,...nums)+1),type,hidden:false,muted:false,locked:false};return {...p,tracks:type==='audio'?[...p.tracks,t]:type==='video'?[...p.tracks.filter(x=>x.creatorStyle),t,...p.tracks.filter(x=>!x.creatorStyle)]:[t,...p.tracks]};}
-export function addMediaClip(p,mediaId,trackId,start){const m=p.media.find(m=>m.id===mediaId);if(!m)throw Error('Media not found.');const t=track(p).get(trackId);if(!t)throw Error('Track not found.');const c={id:uid(),mediaId,trackId,name:m.name,start:quant(Math.max(0,start),p.fps),duration:Math.max(1/p.fps,Math.floor(m.duration*p.fps)/p.fps),sourceIn:0,fx:fxDefault(),linkedId:null};let after={...p,clips:[...p.clips,c]};if(m.type==='video'&&t.type==='video'&&m.hasAudio!==false){let a=p.tracks.find(t=>t.type==='audio'&&!t.locked&&!p.clips.some(x=>x.trackId===t.id&&x.start<end(c)-EPS&&end(x)>c.start+EPS));if(!a){after=addTrack(after,'audio');a=after.tracks.at(-1);}const audio={...structuredClone(c),id:uid(),trackId:a.id,linkedId:c.id};c.linkedId=audio.id;after.clips.push(audio);}return finish(p,after);}
+export function addMediaClip(p,mediaId,trackId,start){const m=p.media.find(m=>m.id===mediaId);if(!m)throw Error('Media not found.');const t=track(p).get(trackId);if(!t)throw Error('Track not found.');const c={id:uid(),mediaId,trackId,name:m.name,start:quant(Math.max(0,start),p.fps),duration:Math.max(1/p.fps,Math.floor(m.duration*p.fps)/p.fps),sourceIn:0,fx:fxDefault(),linkedId:null};let after={...p,clips:[...p.clips,c]};if(m.type==='video'&&t.type==='video'&&m.hasAudio!==false){let a=p.tracks.find(t=>t.type==='audio'&&!t.locked&&!p.clips.some(x=>x.trackId===t.id&&x.start<end(c)-EPS&&end(x)>c.start+EPS));if(!a){after=addTrack(after,'audio');a=after.tracks.at(-1);}const audio={...structuredClone(c),id:uid(),trackId:a.id,fx:{...structuredClone(c.fx),gainDb:10},linkedId:c.id};c.linkedId=audio.id;after.clips.push(audio);}return finish(p,after);}
 
 export function duplicateClips(p,ids,{count=1,until=null}={}){
  const chosen=new Set(ids.flatMap(id=>pair(p,id)));if(!chosen.size)throw Error('Select one or more clips to duplicate.');

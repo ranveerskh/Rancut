@@ -4,7 +4,7 @@ import FramingWorkspace from './FramingWorkspace.jsx';
 import {changedOptions,recutKeys} from './refine-auto.js';
 import {defaultFraming} from './framing.js';
 export default function AutoEditWizard({project,media,onImport,onPreview,onApply,onClose,onFrame,onSceneFrame,initialOptions,onRefine}){
- const defaults={mainId:project.media.find(m=>m.type==='video')?.id||'',voiceId:'',green:true,normalize:true,backgroundId:'',bgmId:'',logoId:'',style:'simple',trim:true,clean:false,allShort:false,maxDuration:2,threshold:-38,minPause:.55,padding:.12,transition:'none',sound:false,bgmDb:-24,duck:true,includeLogo:false,crop:null,framing:project.creatorFraming||defaultFraming(),subject:null,frameTime:0,baseScale:108},hasSaved=!!initialOptions;
+ const defaults={mainId:project.media.find(m=>m.type==='video')?.id||'',voiceId:'',green:true,normalize:true,backgroundId:'',bgmId:'',logoId:'',style:'simple',trim:true,clean:false,allShort:false,maxDuration:2,threshold:-62,minPause:.55,padding:.12,transition:'none',sound:false,bgmDb:-24,duck:true,includeLogo:false,crop:null,framing:project.creatorFraming||defaultFraming(),subject:null,frameTime:0,baseScale:108},hasSaved=!!initialOptions;
  const [step,setStep]=useState(initialOptions?2:0),[o,setO]=useState(()=>({...defaults,...initialOptions,mainId:initialOptions?.mainId||defaults.mainId,framing:initialOptions?.framing||defaults.framing})),[draft,setDraft]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [previewWidth,setPreviewWidth]=useState(60);const layout=useRef();
  const resizePanels=e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);};

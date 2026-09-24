@@ -1,7 +1,7 @@
 const LICENSE_API = 'https://ifeuwmodcrjyjzkunfyr.supabase.co/functions/v1/license-api';
 const INSTALLATION_KEY = 'rancut.installation.id';
 const SAVED_LICENSE_KEY = 'rancut.license.key';
-const APP_VERSION = '0.6.1';
+const APP_VERSION = '0.6.2';
 
 function store() {
   if (!globalThis.localStorage) throw new Error('Local app storage is unavailable.');

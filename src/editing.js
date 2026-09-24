@@ -49,6 +49,12 @@ export function scopedRemove(p,ranges,{scope='all',ids=[],ripple=true}={}) {
   const edited=T.removeRanges(sub,ranges,{ripple});
   return T.finish(p,{...p,clips:[...p.clips.filter(c=>!chosen.has(c.id)),...edited.clips],markers:scope==='all'?edited.markers:p.markers});
 }
+export function rippleTrimRight(p,clipId,time,options={}){
+ const at=T.quant(time,p.fps),target=p.clips.find(c=>c.id===clipId&&c.start<at&&T.end(c)>at);
+ if(!target)throw Error('Select the clip you want to trim, then place the playhead inside it.');
+ const range=[at,T.end(target)];
+ return {project:scopedRemove(p,[range],{...options,ripple:true}),range,targetEnd:T.end(target)};
+}
 export function pasteEffects(p,ids,copied,section='all'){
   const chosen=new Set(ids);
   return T.finish(p,{...p,clips:p.clips.map(c=>{
