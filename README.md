@@ -1,10 +1,10 @@
-# RanCut 0.6.1 Preview
+# RanCut 0.6.2 Preview
 
 Complete source, built frontend and Windows installer workflow. This ZIP is NOT a prebuilt EXE. Copy the editor folder contents into your repository, including `.github/workflows/publish-installer.yml`. Back up project JSON before upgrading.
 
-## New in 0.6.1
+## New in 0.6.2
 
-Feedback retry/outbox, direct verified Windows downloads, companion Release Manager and required-update grace policy. See RELEASE-NOTES-0.6.1.md. Install the editor first; deploy the included SQL/Edge changes later. Missing backend services display setup pending.
+Fixes selected-clip X splitting, bounds W ripple-trim to the selected clip, keeps media paused when Space is pressed during a pending load, starts silence detection at −62 dB and main-video audio at +10 dB, and focuses the New Project name field. It also includes the corrected trial RPC migration. See RELEASE-NOTES-0.6.2.md. Install the editor first, then run the trial SQL repair and deploy the included Edge Function.
 
 ## Retained editor features
 
@@ -37,7 +37,7 @@ npm test
 npm run dist:win
 ```
 
-GitHub Actions tests and builds RanCut-0.6.1-Setup.exe with --publish never. Install over the current preview. Windows may cache an old shortcut icon; recreate the shortcut after installing if needed.
+GitHub Actions tests and builds RanCut-0.6.2-Setup.exe with --publish never. Install over the current preview. Windows may cache an old shortcut icon; recreate the shortcut after installing if needed.
 
 Original logo: public/rancut-icon.png. App: public/brand-icon.png. Installer: assets/icon.ico. Optional scripts/render-brand.cjs needs Sharp as a QA-only tool, not a runtime dependency.
 

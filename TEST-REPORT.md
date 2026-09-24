@@ -1,15 +1,12 @@
-# RanCut 0.6.1 validation — 2026-09-23
+# RanCut 0.6.2 validation — 2026-09-24
 
-Executed on Linux with Node 24.19.0 using the available local dependency installation.
+Executed in the provided Linux workspace with Node 24.19.0.
 
-- `node --test tests/*.test.js`: 106 tests; 99 passed, 0 failed, 7 skipped.
-- The 7 skipped tests need a working FFmpeg executable for real encode/proxy/export validation. Windows CI runs the FFmpeg preflight in `npm test` and must pass before building.
-- `npm run build`: Vite production build passed (1619 transformed modules).
-- Platform `node --test tests/*.test.cjs`: 2 passed, 0 failed.
-- Electron/preload and admin JavaScript syntax checked; Edge TypeScript transpile/bundle passed.
+- `RANCUT_FFMPEG=/usr/bin/ffmpeg npm test`: 111 passed, 0 failed, 0 skipped. This includes real MP4 export, media proxy, and 4K decode checks using the system FFmpeg binary.
+- `npm run build`: Vite production build passed (1619 modules).
+- `rancut-platform060`: 2 platform tests passed; admin JavaScript syntax and the 0.6.2 Edge Function bundle passed.
+- Added regression checks for selection-scoped X splitting, the exact W-trim boundary, the +10 dB linked audio default, −62 dB silence detection, and pausing while media is still loading.
 
-New checks cover update deadlines, optional releases, untrusted redirect rejection, cancellation, bad installer bytes, post-download tampering, offline cached update policy, empty-channel current-version status, public GitHub metadata fallback, daily scheduling, feedback persistence/retry with a stable submission ID, omission of media/license secrets, partial backend availability, preserved admin drafts, required-release selection and unauthorized admin requests.
+The package includes the SQL migration and Edge Function source but has not been deployed to Supabase or Netlify. The Windows installer workflow is included, but no Windows EXE was built in this Linux workspace. Test the installer, UAC flow, audio playback and GPU preview on Windows before sharing the beta build.
 
-The installer fixtures are mocked bytes, not a Windows installation. No Windows installer was built here; no real Windows updater, UAC, GPU, live browser rendering, Supabase migration or hosted Netlify feedback test was performed. Existing save-close handshake is reused before opening the installer. Test these on Windows after building, then complete backend deployment and end-to-end checks.
-
-No live SQL, Edge Function, Netlify or GitHub deployment was performed. SHA-256 verification is not publisher code signing and does not make a local client tamper-proof.
+SHA-256 update verification is not publisher code signing and does not make the local client tamper-proof.

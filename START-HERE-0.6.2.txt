@@ -1,0 +1,36 @@
+RanCut 0.6.2 — editing fixes and trial RPC repair
+=================================================
+
+This is source, not a prebuilt EXE. Back up your project JSON files first.
+
+EDITOR / INSTALLER
+1. Copy the CONTENTS of editor/ into the root of your RanCut GitHub repository.
+   Keep .github/workflows/publish-installer.yml. Do not upload the outer ZIP
+   folder as the repository root.
+2. On Windows run npm ci, npm test, npm run build, and npm run dist:win.
+   Or manually run “Prepare downloadable installer” in GitHub Actions. It
+   creates a DRAFT release with the installer and release-metadata.json.
+3. Install and test that EXE before publishing the GitHub draft publicly.
+   Help → Updates checks for a newer public release daily and downloads the
+   verified installer directly when one is available.
+
+SUPABASE TRIAL REPAIR
+4. If the trial plan migration was already run, open Supabase → SQL Editor and
+   run RanCut-supabase-004-trial-rpc-fix.sql. It preserves trial dates and use
+   counts while replacing the two trial RPCs and refreshing the schema cache.
+   For a new database, run the licensing SQL first, then migration 003, then
+   migration 004.
+5. Deploy backend/supabase/functions/license-api/index.ts to the existing
+   license-api function. Keep Verify JWT disabled as in the existing setup.
+6. Check the Platform page health status. It should show functionVersion 0.6.2,
+   admin: true, and the expected database tables as Ready.
+
+FIXES IN THIS BUILD
+- X splits only selected clips and their linked audio.
+- W ripple-trim stops at the selected clip’s end.
+- Space pause prevents a delayed media load from restarting video or audio.
+- New silence threshold is −62 dB. New linked main-video audio starts at +10 dB.
+- The New Project name input is focused when the project home opens.
+
+Validation: 110 editor tests passed with /usr/bin/ffmpeg; Vite build passed.
+No live database deployment or Windows installer build was performed here.
