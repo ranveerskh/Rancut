@@ -2,40 +2,30 @@ name: RanCut Windows and Web
 on:
   push:
   workflow_dispatch:
-
 permissions:
   contents: read
-
 jobs:
   build:
     runs-on: windows-latest
     timeout-minutes: 30
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
-
       - run: npm ci --no-audit --no-fund
       - run: npm test
-      - run: npm run build
-
-      # Build the installer only. Do not try to publish a GitHub release.
-      - run: npx electron-builder --win nsis --publish never
+      - run: npm run dist:win
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-
       - uses: actions/upload-artifact@v4
         with:
-          name: RanCut-Installer
-          path: release/RanCut-*-Setup.exe
+          name: RanCut-v0.6.4-Installer
+          path: release/*-Setup.exe
           if-no-files-found: error
-
       - uses: actions/upload-artifact@v4
         with:
-          name: RanCut-Web-Assets
+          name: RanCut-v0.6.4-Web-Assets
           path: dist
           if-no-files-found: error
