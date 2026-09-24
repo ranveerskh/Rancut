@@ -19,7 +19,7 @@ test('startup subscribes first, checks immediately, and ignores stale cached sta
  await tick();
  assert.equal(state.latest,'0.6.4');
  listener({checked:true,available:true,latest:'0.6.5'});
- statusResolve({checked:false,available:false,current:'0.6.3'});
+ statusResolve({checked:false,available:false,current:'0.6.4'});
  await tick();
  assert.equal(state.latest,'0.6.5');
  stop();
