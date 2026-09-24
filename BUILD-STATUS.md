@@ -1,6 +1,12 @@
-# RanCut 0.6.2 Preview
+# RanCut 0.6.3 Private Beta
 
-Source update with Windows build workflow, not a prebuilt EXE.
-Editor regression suite: 111 passed. Platform suite: 2 passed. Edge Function bundling and Vite production build passed.
-Windows installer, RTX, live-browser layout, Supabase SQL execution, and long-project endurance still require device/service testing.
-No new speed, signing, security or public-release readiness claim.
+The editor source and Vite production build are ready for the Windows GitHub Actions workflow.
+
+- Full editor suite: 115 passed, 0 failed, 0 skipped.
+- Production frontend build: passed, 1,620 modules.
+- Electron main/preload syntax checks: passed.
+- Windows installer: not built in this Linux workspace.
+- Q ripple trim and update startup/release lookup: regression tests included.
+- Free, trial, and Pro details: rendered under Help → Plans.
+
+No Supabase SQL or Edge Function changes are part of this update.

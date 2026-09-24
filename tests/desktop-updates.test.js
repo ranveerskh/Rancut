@@ -31,10 +31,10 @@ test('hash failure removes partial installer and cannot launch it',async t=>{
 });
 test('untrusted redirect is rejected before fetching destination',async t=>{
  let calls=0;const {up}=await setup(t,async(url,options)=>{if(options.method)return metadata();calls++;return new Response(null,{status:302,headers:{location:'https://evil.test/setup.exe'}});});
- await up.check();await assert.rejects(up.download(),/Untrusted/);assert.equal(calls,1);
+ await up.check();await assert.rejects(up.download(),/Untrusted/);assert.equal(calls,2);
 });
 test('download can be cancelled and partial bytes are removed',async t=>{
- const {up,dir}=await setup(t,async(url,options)=>{if(options.method)return metadata();return new Response(new ReadableStream({start(c){c.enqueue(bytes.subarray(0,2));options.signal.addEventListener('abort',()=>c.error(Error('aborted')));}}));});
+ const {up,dir}=await setup(t,async(url,options)=>{if(options.method)return metadata();if(String(url).includes('api.github.com'))return Response.json({assets:[]});return new Response(new ReadableStream({start(c){c.enqueue(bytes.subarray(0,2));options.signal.addEventListener('abort',()=>c.error(Error('aborted')));}}));});
  await up.check();const downloading=up.download();setTimeout(()=>up.cancel(),25);await assert.rejects(downloading,/cancelled/);assert.equal((await up.status()).phase,'cancelled');assert.deepEqual(await readdir(path.join(dir,'RanCut Updates')),[]);
 });
 test('required policy survives offline restart; missing backend does not invent a lock',async t=>{
@@ -46,7 +46,7 @@ test('required policy survives offline restart; missing backend does not invent 
 
 test('empty release channel reports current version instead of setup failure',async t=>{
  const {up}=await setup(t,async(url,options)=>Response.json({ok:true,release:null,requiredRelease:null}));
- const result=await up.check();assert.equal(result.releaseState,'none');assert.equal(result.error,'');assert.equal(result.available,false);assert.equal(result.current,'0.6.1');
+ const result=await up.check();assert.equal(result.releaseState,'none');assert.equal(result.error,'');assert.equal(result.available,false);assert.equal(result.current,'0.6.1');assert.equal(result.checked,true);
 });
 
 test('public GitHub metadata is used as an optional update fallback',async t=>{
@@ -61,4 +61,19 @@ test('public GitHub metadata is used as an optional update fallback',async t=>{
   return Response.json({version:'0.7.0',downloadUrl:metadataRelease.downloadUrl,sha256:metadataRelease.sha256,size:metadataRelease.size});
  });
  const result=await up.check();assert.equal(result.source,'github');assert.equal(result.latest,'0.7.0');assert.equal(result.available,true);assert.equal(result.requiredVersion,undefined);
+});
+
+test('a stale Platform release does not hide a newer published GitHub installer',async t=>{
+ const platformRelease={...release,version:'0.6.1',downloadUrl:'https://github.com/ranveerskh/Rancut/releases/download/v0.6.1/RanCut-0.6.1-Setup.exe',required:false};
+ const githubRelease={...release,required:false,publishedAt:new Date().toISOString()};
+ const github={tag_name:'v0.7.0',published_at:githubRelease.publishedAt,assets:[
+  {name:'release-metadata.json',browser_download_url:'https://github.com/ranveerskh/Rancut/releases/download/v0.7.0/release-metadata.json'},
+  {name:'RanCut-0.7.0-Setup.exe',browser_download_url:githubRelease.downloadUrl}
+ ]};
+ const {up}=await setup(t,async(url,options)=>{
+  if(options?.method==='POST')return Response.json({ok:true,release:platformRelease,requiredRelease:null});
+  if(String(url).includes('api.github.com'))return Response.json(github);
+  return Response.json({version:'0.7.0',downloadUrl:githubRelease.downloadUrl,sha256:githubRelease.sha256,size:githubRelease.size,publishedAt:githubRelease.publishedAt});
+ });
+ const result=await up.check();assert.equal(result.source,'github');assert.equal(result.latest,'0.7.0');assert.equal(result.available,true);assert.equal(result.checked,true);
 });

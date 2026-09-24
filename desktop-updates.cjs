@@ -2,11 +2,11 @@ const fs=require('node:fs/promises');
 const path=require('node:path');
 const {createReadStream}=require('node:fs');
 const {createHash}=require('node:crypto');
-const {validateRelease,policy}=require('./update-policy.cjs');
+const {compare,validateRelease,policy}=require('./update-policy.cjs');
 
 module.exports=function createUpdater({version,userData,downloads,endpoint,githubRepo='ranveerskh/Rancut',notify=()=>{},fetchImpl=fetch}){
  const cache=path.join(userData,'update-policy.json');let release=null,required=null,lastClock=0,controller=null,verified=null;
- let state={phase:'idle',received:0,total:0,error:'',releaseState:'unknown',source:'none'};let loaded=false;
+ let state={phase:'idle',received:0,total:0,error:'',releaseState:'unknown',source:'none',checked:false};let loaded=false;
  const emit=patch=>{state={...state,...patch};notify(snapshot());};
  function snapshot(){const now=Math.max(Date.now(),lastClock);return {...state,current:version,latest:release?.version,release,...policy(version,release,now),blocked:policy(version,required,now).blocked,warning:policy(version,required,now).warning,daysRemaining:policy(version,required,now).daysRemaining,requiredVersion:required?.version};}
  async function init(){if(loaded)return;loaded=true;try{const saved=JSON.parse(await fs.readFile(cache,'utf8'));release=saved.release?validateRelease(saved.release):null;required=saved.required?validateRelease(saved.required):null;lastClock=Number(saved.lastClock)||0;}catch{} }
@@ -33,20 +33,33 @@ module.exports=function createUpdater({version,userData,downloads,endpoint,githu
   if(!release||!release.version)return null;
   return release;
  }
- async function check(){await init();try{
+ async function platformLatest(){
   const res=await fetchImpl(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'public_release',appVersion:version}),signal:AbortSignal.timeout(12000)});
   const body=await res.json();if(!res.ok||body.ok!==true)throw Error(body.message||'Update service unavailable.');
-  if(body.release){release=validateRelease(body.release);required=body.requiredRelease?validateRelease(body.requiredRelease):null;await save();emit({error:'',releaseState:'published',source:'platform'});}
-  else {
-    // The platform controls required deadlines. When it has no release row,
-    // use the public GitHub release as an optional update source.
-    try{
-      const github=await githubLatest();
-      if(github&&require('./update-policy.cjs').compare(github.version,version)>0){release=github;required=null;await save();emit({error:'',releaseState:'published',source:'github'});}
-      else emit({error:'',releaseState:release?'cached':'none',source:release?'cache':'none'});
-    }catch{emit({error:'',releaseState:release?'cached':'none',source:release?'cache':'none'});}
+  return {release:body.release?validateRelease(body.release):null,required:body.requiredRelease?validateRelease(body.requiredRelease):null};
+ }
+ async function check(){await init();
+  // Check both channels every time. The platform may still have an older
+  // release row after a newer installer has been published on GitHub.
+  const [platformResult,githubResult]=await Promise.allSettled([platformLatest(),githubLatest()]);
+  const platform=platformResult.status==='fulfilled'?platformResult.value:null;
+  const github=githubResult.status==='fulfilled'?githubResult.value:null;
+  if(platform)required=platform.required;
+  const remote=[platform?.release,platform?.required,github].filter(Boolean);
+  const newer=remote.filter(item=>compare(item.version,version)>0).sort((a,b)=>compare(a.version,b.version));
+  if(newer.length){
+   release=newer.at(-1);
+  }else if(platform||githubResult.status==='fulfilled'){
+   release=remote.sort((a,b)=>compare(a.version,b.version)).at(-1)||null;
+  }else{
+   const reasons=[platformResult,githubResult].filter(x=>x.status==='rejected').map(x=>x.reason?.message||'Update service unavailable.');
+   emit({error:'Update connection pending: '+reasons.join(' · '),releaseState:release?'cached':'offline',source:release?'cache':'none',checked:false});
+   return snapshot();
   }
- }catch(e){emit({error:'Update connection pending: '+e.message,releaseState:release?'cached':'offline'});}return snapshot();}
+  const source=release?(release===github?'github':'platform'):'none';
+  await save();emit({error:'',releaseState:release?'published':'none',source,checked:true});
+  return snapshot();
+ }
  async function status(){await init();return snapshot();}
  async function assertAllowed(){await init();await save();if(snapshot().blocked)throw Error('This version is over 30 days behind a required update. Download the update to use Auto Edit. Your projects and exports remain available.');return true;}
  async function download(){await init();if(controller)throw Error('Download already running.');if(!release||!snapshot().available)throw Error('No newer installer is ready.');

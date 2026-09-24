@@ -43,7 +43,6 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
   ipcMain.handle('open-update',async event=>{valid(event);return updater.download();});
   ipcMain.handle('cancel-update',event=>{valid(event);updater.cancel();});
   ipcMain.handle('install-update',async event=>{valid(event);if(waiting)throw Error('Waiting for the project to finish saving.');if(process.platform!=='win32')throw Error('Windows installer requires Windows.');await updater.installer();pendingInstall=async()=>{const installer=await updater.installer();const error=await shell.openPath(installer);if(error)throw Error(error);};window.close();return true;});
-  window.webContents.once('did-finish-load',()=>{updater.check().catch(()=>{});});
   const updateTimer=setInterval(()=>updater.check().catch(()=>{}),24*60*60*1000);updateTimer.unref();
   ipcMain.handle('export-power',(event,active)=>{valid(event);if(active===true)return power.start();power.release();return false;});
   ipcMain.handle('notify-export',event=>{valid(event);if(Notification.isSupported())new Notification({title:'RanCut export complete',body:'Your MP4 is saved in the output folder.'}).show();});

@@ -90,7 +90,7 @@ test('feature requests submit only a bounded safe context to the platform inbox'
   const result=await client.submitFeedback({type:'Feature request',message:'Please add a cleaner feedback inbox.',diagnostics:{encoder:'h264_nvenc',mode:'gpu',renderer:'NVIDIA RTX',clips:12,missing:0,secret:'must not leave app'}});
   assert.equal(result.status,'open');
   assert.equal(calls.length,1);assert.equal(calls[0].action,'submit_feedback');assert.equal(calls[0].feedbackType,'feature');assert.equal(calls[0].message,'Please add a cleaner feedback inbox.');
-  assert.deepEqual(calls[0].appContext,{version:'0.6.2',encoder:'h264_nvenc',mode:'gpu',renderer:'NVIDIA RTX',clips:12,missing:0});
+  assert.deepEqual(calls[0].appContext,{version:'0.6.3',encoder:'h264_nvenc',mode:'gpu',renderer:'NVIDIA RTX',clips:12,missing:0});
   await assert.rejects(client.submitFeedback({type:'Feature request',message:'no'}),/little more detail/);
   assert.equal(calls.length,1);
 });

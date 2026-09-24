@@ -1,0 +1,22 @@
+RanCut 0.6.3 — Q trim, startup updates, and plan comparison
+
+WHAT CHANGED
+• Q ripple-trim uses the selected clip's start.
+• Startup update checks show the notice reliably and compare Platform + GitHub releases.
+• Help → Plans shows the 30-day trial, Free, and Pro features and limits.
+
+INSTALL / RELEASE
+1. Use this editor source as the repository contents. Keep the .github folder.
+2. Push the new 0.6.3 version to GitHub and let the Windows build workflow finish.
+3. To make an in-app update available, run “Prepare downloadable installer” in Actions. It creates a draft GitHub Release.
+4. Install and test the draft installer, then publish the GitHub Release. It must include RanCut-0.6.3-Setup.exe and release-metadata.json.
+5. Once published, the app checks at startup and every 24 hours while open. A source push or Actions artifact by itself is not a published update.
+
+PLANS
+Help → Plans shows the current private-beta comparison. Pro key entry remains under Help → Account. Online purchase is not live yet.
+
+BACKEND
+These 0.6.3 editor fixes do not change SQL or the Supabase Edge Function. No SQL migration or Edge Function redeployment is needed for this release.
+
+TEST
+Run npm ci, npm test, and npm run build. On Windows, build the installer with npm run dist:win or GitHub Actions.
