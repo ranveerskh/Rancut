@@ -1,0 +1,43 @@
+name: Prepare downloadable installer
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npm run dist:win
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Create draft GitHub Release with direct EXE asset
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $releaseVersion = (Get-Content package.json | ConvertFrom-Json).version
+          $installer = "release/RanCut-$releaseVersion-Setup.exe"
+          $installerHash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLower()
+          $installerSize = (Get-Item $installer).Length
+          $downloadUrl = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$releaseVersion/RanCut-$releaseVersion-Setup.exe"
+          $publishedAt = (Get-Date).ToUniversalTime().ToString("o")
+          @{version=$releaseVersion;downloadUrl=$downloadUrl;sha256=$installerHash;size=$installerSize;publishedAt=$publishedAt} | ConvertTo-Json | Set-Content release/release-metadata.json
+          $releaseNotes = "RELEASE-NOTES-$releaseVersion.md"
+          if (-not (Test-Path $releaseNotes)) { throw "Missing release notes: $releaseNotes" }
+          gh release create "v$releaseVersion" $installer release/release-metadata.json --draft --title "RanCut $releaseVersion" --notes-file $releaseNotes
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RanCut-Installer-and-Release-Metadata
+          path: |
+            release/*-Setup.exe
+            release/release-metadata.json
+          if-no-files-found: error
