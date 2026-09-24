@@ -9,7 +9,7 @@ export default function UpdatePanel(){
   return()=>{mounted=false;unsubscribe?.();};
  },[]);
  async function run(fn){setBusy(true);setMessage('');try{if(!fn)throw Error('Updates are available in the desktop app.');const result=await fn();if(result&&typeof result==='object')setInfo(result);}catch(e){setMessage(e.message);}finally{setBusy(false);}}
- const current=info.current||'0.6.3';
+ const current=info.current||'0.6.4';
  const upToDate=!!info.checked&&!info.available&&!info.blocked;
  const noRelease=upToDate&&info.releaseState==='none';
  const statusText=message||info.error||(upToDate?`RanCut ${current} is current.`:info.phase==='idle'&&!info.checked?'Checking for the latest installer…':'');

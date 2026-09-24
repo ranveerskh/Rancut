@@ -1,0 +1,20 @@
+RanCut 0.6.4 — project-name focus fix and update-popup test
+
+WHAT CHANGED
+After a project is moved to Trash, keyboard focus returns to “Name your new project.” You can immediately type the next project name.
+
+This is an editor-only update. It does not need new Supabase SQL or an Edge Function deployment.
+
+TEST THE UPDATE POPUP FROM YOUR INSTALLED 0.6.3
+1. Keep the currently installed 0.6.3 app installed for now.
+2. Replace the GitHub repository contents with the contents of the editor folder in this ZIP. Keep the .github folder.
+3. Push the 0.6.4 source to GitHub and wait for the Windows build workflow to pass.
+4. In GitHub Actions, run “Prepare downloadable installer.” It creates a draft release containing RanCut-0.6.4-Setup.exe and release-metadata.json.
+5. Publish that GitHub Release. The updater ignores drafts, source pushes, and Actions artifacts.
+6. Launch the installed 0.6.3 app while online. The startup check should show “RanCut 0.6.4 is available.” Open Help → Updates to confirm the release is listed.
+7. Press Download in Updates to verify the installer download starts directly. Install 0.6.4 only after you have checked the 0.6.3 popup.
+
+The app also checks at startup and every 24 hours while open. If the popup does not appear, first check Help → Updates and confirm the 0.6.4 GitHub Release is published (not draft) and contains both release assets.
+
+VERIFY THE TRASH FIX
+In 0.6.4, open Projects, move one project to Trash, then type a name in “Name your new project” and create it. The field should accept input immediately.

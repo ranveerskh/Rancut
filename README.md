@@ -1,16 +1,19 @@
-# RanCut 0.6.3 Private Beta
+# RanCut 0.6.4 Private Beta
 
 RanCut is a local-first video editor for creator-led edits. This source ZIP includes the Vite app, desktop shell, tests, and Windows GitHub Actions workflows. It does not contain a ready-made Windows installer.
 
-## Changes in 0.6.3
+## Changes in 0.6.4
 
+- After moving a project to Trash, focus returns to the new-project name field so you can type the next name right away.
 - Q ripple-trim now takes its start from the selected clip, even when another overlapping clip starts earlier.
 - Startup checks register the update notice before checking. Update checks compare the newest Platform release and published GitHub release, so an older Platform row cannot hide a newer installer.
 - The Updates page distinguishes a successful up-to-date check from a missing public installer and explains what needs to be published.
 - Help now has a visible Free, Pro trial, and Pro comparison. It lists the 30-day trial, Free's 1080p cap and two Auto Edits per calendar month, and Pro's unlimited Auto Edit and 2K/4K export.
 - W ripple-trim, Space pause during pending media load, −62 dB silence detection, +10 dB main-video audio, and New Project name-field fixes from 0.6.2 remain included.
 
-See [RELEASE-NOTES-0.6.3.md](RELEASE-NOTES-0.6.3.md) for details.
+This version is Build 64. The 0.6.3 startup update check should detect it after the 0.6.4 installer and `release-metadata.json` are published on GitHub. A source push or draft release alone will not produce the popup.
+
+See [RELEASE-NOTES-0.6.4.md](RELEASE-NOTES-0.6.4.md) for details.
 
 ## Run and verify
 
@@ -32,7 +35,7 @@ The desktop app checks at startup, again every 24 hours while open, and when the
 
 ## Plans
 
-Open **Help → Plans** for the comparison. During the private beta, online purchase is not available; Pro access uses a license key in **Help → Account**. This 0.6.3 editor update does not change the Supabase SQL or Edge Function, so they do not need redeployment for these fixes.
+Open **Help → Plans** for the comparison. During the private beta, online purchase is not available; Pro access uses a license key in **Help → Account**. This 0.6.4 editor update does not change the Supabase SQL or Edge Function, so they do not need redeployment for these fixes.
 
 ## Included safeguards and limits
 

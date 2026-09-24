@@ -1,8 +1,10 @@
-RanCut 0.6.3 update-channel recheck:
+RanCut 0.6.4 update-channel recheck:
 
-- Startup listener is installed before the renderer starts the check.
-- Platform and GitHub are queried together; the highest public version wins.
-- A missing published installer is reported separately from a successful current-version check.
-- For the end-to-end notice and download test, publish a higher-version GitHub Release with the installer and release-metadata.json, then launch the Windows installer build.
+- 0.6.3 startup subscribes to update events before requesting the update status/check.
+- Platform and GitHub are queried together; the highest published version wins.
+- A missing published installer is shown separately from a successful current-version check.
+- The 0.6.4 release needs `RanCut-0.6.4-Setup.exe` and `release-metadata.json`.
+- GitHub Actions creates a draft; publish it before launching 0.6.3, because the app ignores draft releases and source pushes.
+- Help → Updates shows the release and its Download action starts the verified `.exe` download directly.
 
-See TEST-REPORT.md for the current test results.
+See START-HERE-0.6.4.txt and TEST-REPORT.md for the full test steps and current verification status.
