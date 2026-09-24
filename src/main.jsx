@@ -35,7 +35,7 @@ import {buildAutoEdit,sampleGreen} from './auto-edit.js';
 import FrameDialog from './FrameDialog.jsx';
 import UpdateNotice from './UpdateNotice.jsx';
 import {startFeedbackRetry} from './feedback-outbox.js';
-import {authorizeAutoEdit} from './license-client.js';
+import {authorizeAutoEdit,checkAccountStatus} from './license-client.js';
 const fmt=t=>`${String(Math.floor(Math.max(0,t)/60)).padStart(2,'0')}:${Math.max(0,t%60).toFixed(2).padStart(5,'0')}`;
 const api=async(url,data,signal)=>{const binary=data instanceof Blob||ArrayBuffer.isView(data)||data instanceof ArrayBuffer;const r=await fetch('/api/'+url,{method:data===undefined?'GET':'POST',headers:{'X-RanCut':'1','Content-Type':binary?'application/octet-stream':'application/json'},body:data===undefined?undefined:binary?data:JSON.stringify(data),signal:signal||AbortSignal.timeout(120000)});const j=await r.json();if(!r.ok)throw Error(j.error||'Local processing failed.');return j;};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -75,7 +75,8 @@ function App(){
  const previewRef=useRef(.5),dragRef=useRef(null),suppressClick=useRef(false);
  previewRef.current=previewScale;
 
- const [project,setProject]=useState(T.emptyProject),[media,setMedia]=useState([]),[selected,setSelected]=useState(null),[selectedIds,setSelectedIds]=useState(new Set()),[time,setTime]=useState(0),[playing,setPlaying]=useState(false),[zoom,setZoom]=useState(80),[status,setStatus]=useState('Ready'),[tab,setTab]=useState('video'),[leftTab,setLeftTab]=useState('media'),[follow,setFollow]=useState(true),[ripple,setRipple]=useState(true),[scroll,setScroll]=useState(0),[viewport,setViewport]=useState(1000),[threshold,setThreshold]=useState(-38),[pauseLength,setPauseLength]=useState(.55),[padding,setPadding]=useState(.12),[pauses,setPauses]=useState(null),[exportOpen,setExportOpen]=useState(false),[exporting,setExporting]=useState(false),[progress,setProgress]=useState(0),[exportWidth,setExportWidth]=useState(1920),[quality,setQuality]=useState('High'),[result,setResult]=useState(null),[ready,setReady]=useState(false),[meter,setMeter]=useState(-60),[picking,setPicking]=useState(false),[ffmpeg,setFfmpeg]=useState(false),[encoderInfo,setEncoderInfo]=useState({selected:'libx264',mode:'cpu',hardware:[]}),[importing,setImporting]=useState(false);
+ const [project,setProject]=useState(T.emptyProject),[media,setMedia]=useState([]),[selected,setSelected]=useState(null),[selectedIds,setSelectedIds]=useState(new Set()),[time,setTime]=useState(0),[playing,setPlaying]=useState(false),[zoom,setZoom]=useState(80),[status,setStatus]=useState('Ready'),[tab,setTab]=useState('video'),[leftTab,setLeftTab]=useState('media'),[follow,setFollow]=useState(true),[ripple,setRipple]=useState(true),[scroll,setScroll]=useState(0),[viewport,setViewport]=useState(1000),[threshold,setThreshold]=useState(-38),[pauseLength,setPauseLength]=useState(.55),[padding,setPadding]=useState(.12),[pauses,setPauses]=useState(null),[exportOpen,setExportOpen]=useState(false),[exporting,setExporting]=useState(false),[progress,setProgress]=useState(0),[exportWidth,setExportWidth]=useState(1920),[quality,setQuality]=useState('High'),[result,setResult]=useState(null),[ready,setReady]=useState(false),[meter,setMeter]=useState(-60),[picking,setPicking]=useState(false),[ffmpeg,setFfmpeg]=useState(false),[encoderInfo,setEncoderInfo]=useState({selected:'libx264',mode:'cpu',hardware:[]}),[importing,setImporting]=useState(false),[accountPlan,setAccountPlan]=useState(null);
+ useEffect(()=>{checkAccountStatus().then(setAccountPlan).catch(()=>{});},[]);
  useEffect(()=>{if(!exportOpen&&!exporting)setExportWidth(project.width);},[project.width,exportOpen,exporting]);
  const [statusVisible,setStatusVisible]=useState(false);
  useEffect(()=>{setStatusVisible(status!=='Ready');if(/failed|error|could not|missing/i.test(status))return;const timer=setTimeout(()=>setStatusVisible(false),4500);return()=>clearTimeout(timer);},[status]);
@@ -193,7 +194,7 @@ function App(){
   const t=T.clamp(at,chosen.start,Math.max(chosen.start,T.end(chosen)-1/p.fps));
   const q={...p,clips:p.clips.filter(c=>!c.fx?.scene).map(c=>({...c,transition:undefined}))};return captureScene(q,t);
  };
- const openExport=()=>{setExportWidth(project.width);setExportOpen(true);};
+ const openExport=async()=>{try{const plan=await checkAccountStatus();setAccountPlan(plan);if(plan.maxExportHeight&&project.height>plan.maxExportHeight){setStatus(`Your ${plan.plan==='free'?'Free plan':'current plan'} supports export up to ${plan.maxExportHeight}p. Activate Pro for 2K/4K.`);return;}setExportWidth(project.width);setExportOpen(true);}catch{setExportWidth(project.width);setExportOpen(true);}};
  const prepareAutoEdit=async options=>{
   const ids=[options.mainId,options.voiceId||options.mainId,options.green?options.backgroundId:null,options.bgmId,options.logoId].filter(Boolean);
   for(const id of ids)if(!mRef.current.find(m=>m.id===id)?.url)throw Error('Import/relink each selected source first.');

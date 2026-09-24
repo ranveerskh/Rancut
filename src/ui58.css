@@ -55,3 +55,10 @@
 .helpContent textarea:disabled{opacity:.65;cursor:wait}
 
 .updateNotice{position:fixed;bottom:12px;right:12px;z-index:110;padding:14px;max-width:360px;background:#231c37;border:1px solid #a586ec;border-radius:10px;box-shadow:0 8px 28px #0005}.updateNotice>div{display:flex;gap:8px;margin-top:10px}
+
+/* Brand lockup: the supplied icon stays untouched; beta is intentionally subordinate. */
+.privateBeta{display:inline-flex;align-items:center;white-space:nowrap;font-size:8px!important;line-height:1;letter-spacing:.13em;color:#b9a7ff;font-weight:700;font-style:normal;text-transform:uppercase}
+.brand b{display:inline-flex;align-items:baseline;gap:7px}
+.brand b::after{content:'PRIVATE BETA';font-size:8px;line-height:1;letter-spacing:.13em;color:#b9a7ff;font-weight:700;white-space:nowrap}
+.homeBrand h1{display:flex;align-items:baseline;gap:7px}
+.helpIdentity h2 .privateBeta{margin-left:5px;vertical-align:middle;color:#9fdac6}

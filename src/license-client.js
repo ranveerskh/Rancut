@@ -43,6 +43,7 @@ export async function request(action, extra = {}) {
     }
     if (!data || data.ok !== true ||
         (action === 'consume_trial' && typeof data.allowed !== 'boolean') ||
+        (action === 'account_status' && typeof data.trialActive !== 'boolean') ||
         (action === 'license_status' && typeof data.active !== 'boolean') ||
         (action === 'activate' && (!data.activationId || !data.expiresAt || !Number.isFinite(Date.parse(data.expiresAt)))) ||
         (action === 'submit_feedback' && (!data.feedback || typeof data.feedback.id !== 'string'))) {
@@ -62,6 +63,10 @@ export function getSavedLicenseKey() {
 }
 export function clearSavedLicenseKey() { store().removeItem(SAVED_LICENSE_KEY); }
 export function consumeTrialAutoEdit() { return request('consume_trial'); }
+export function checkAccountStatus() {
+  const key = getSavedLicenseKey();
+  return request('account_status', key ? { licenseKey: key } : {});
+}
 
 export async function activateLicense(licenseKey, deviceLabel = 'RanCut Windows') {
   const key = String(licenseKey || '').trim().toUpperCase();
@@ -96,8 +101,8 @@ export async function submitFeedback({ type = 'Feature request', message = '', d
 
 export async function authorizeAutoEdit() {
   await globalThis.window?.rancut?.assertUpdateAllowed?.();
-  const status = await checkLicenseStatus();
-  if (status.active) return { ...status, allowed: true, licensed: true };
+  const legacy = await checkLicenseStatus();
+  if (legacy.active) return { ...legacy, allowed: true, licensed: true };
   const trial = await consumeTrialAutoEdit();
-  return { ...trial, licensed: false };
+  return { ...trial, licensed: false, trialActive: Boolean(trial.trialActive) };
 }
