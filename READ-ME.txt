@@ -1,0 +1,35 @@
+RanCut updater patch - base: editor 0.6.4 (also uses the existing 0.6.3 updater interface)
+
+Replace these four files in your editor repository, keeping the exact paths:
+ desktop-updates.cjs
+ src/UpdatePanel.jsx
+ .github/workflows/publish-installer.yml
+ tests/desktop-updates.test.js
+
+Do not upload the ZIP itself as source. Extract it first.
+If the GitHub browser uploader misses .github, edit/create the workflow at that exact path separately.
+
+1. Commit these files to the editor repository.
+2. Actions > Prepare downloadable installer > Run workflow.
+3. Enter a NEW version higher than installed and any existing release, e.g. 0.6.5.
+4. The workflow tests and builds the installer, then creates a DRAFT release.
+5. Download and test the draft installer. For the update-popup test, keep another PC/install on the older version.
+6. Publish that draft release as a normal release (not prerelease). It must contain the EXE and release-metadata.json.
+7. Open the older app and click Check for updates, or restart it for its startup check.
+
+The version input changes package.json and package-lock.json only inside the build job. It does not commit a version bump to your repository.
+Use a fresh version for each run; this workflow deliberately will not overwrite an existing release.
+
+Fixes:
+- GitHub errors/missing metadata no longer silently become an up-to-date result when the platform is empty or stale.
+- Empty channels display No installer published yet, not You are up to date.
+- Manual workflow accepts a test version and creates a draft from the exact checked-out commit.
+- Missing version-specific release notes no longer stop the release job.
+
+No SQL, Edge Function, or Netlify changes needed for this patch.
+The patch changes source code. Rebuild/install to change the installed app.
+An already installed older app cannot gain these fixes merely from uploading source files.
+Existing startup/daily checks and verified direct EXE download are retained.
+
+Verified: 11 updater tests passed (including download verification, tampering, cancellation, offline policy, and partial service failures).
+Windows build and live GitHub release/popup were not executed here.

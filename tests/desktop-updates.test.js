@@ -45,7 +45,7 @@ test('required policy survives offline restart; missing backend does not invent 
 });
 
 test('empty release channel reports current version instead of setup failure',async t=>{
- const {up}=await setup(t,async(url,options)=>Response.json({ok:true,release:null,requiredRelease:null}));
+ const {up}=await setup(t,async(url,options)=>options?.method==='POST'?Response.json({ok:true,release:null,requiredRelease:null}):new Response(null,{status:404}));
  const result=await up.check();assert.equal(result.releaseState,'none');assert.equal(result.error,'');assert.equal(result.available,false);assert.equal(result.current,'0.6.1');assert.equal(result.checked,true);
 });
 
@@ -76,4 +76,14 @@ test('a stale Platform release does not hide a newer published GitHub installer'
   return Response.json({version:'0.7.0',downloadUrl:githubRelease.downloadUrl,sha256:githubRelease.sha256,size:githubRelease.size,publishedAt:githubRelease.publishedAt});
  });
  const result=await up.check();assert.equal(result.source,'github');assert.equal(result.latest,'0.7.0');assert.equal(result.available,true);assert.equal(result.checked,true);
+});
+
+
+test('GitHub failure with an empty platform never reports current',async t=>{
+ const {up}=await setup(t,async(url,options)=>options?.method==='POST'?Response.json({ok:true,release:null,requiredRelease:null}):new Response(null,{status:403}));
+ const result=await up.check();assert.equal(result.checked,false);assert.equal(result.releaseState,'partial');assert.match(result.error,/403/);assert.equal(result.available,false);
+});
+test('missing GitHub metadata is surfaced despite a stale platform release',async t=>{
+ const {up}=await setup(t,async(url,options)=>options?.method==='POST'?Response.json({ok:true,release:{...release,version:'0.6.1'},requiredRelease:null}):Response.json({assets:[]}));
+ const result=await up.check();assert.equal(result.checked,false);assert.equal(result.releaseState,'partial');assert.match(result.error,/metadata/);
 });

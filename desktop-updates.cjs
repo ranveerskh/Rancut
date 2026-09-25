@@ -14,7 +14,8 @@ module.exports=function createUpdater({version,userData,downloads,endpoint,githu
  async function githubLatest(){
   const apiUrl=`https://api.github.com/repos/${githubRepo}/releases/latest`;
   const result=await fetchImpl(apiUrl,{headers:{Accept:'application/vnd.github+json','User-Agent':`RanCut/${version}`},signal:AbortSignal.timeout(12000)});
-  if(!result.ok)throw Error('No public GitHub release is available.');
+  if(result.status===404)return null;
+  if(!result.ok)throw Error(`GitHub update check failed (HTTP ${result.status}). Try again later.`);
   const data=await result.json();
   const assets=Array.isArray(data.assets)?data.assets:[];
   const metadataAsset=assets.find(asset=>asset?.name==='release-metadata.json');
@@ -56,8 +57,10 @@ module.exports=function createUpdater({version,userData,downloads,endpoint,githu
    emit({error:'Update connection pending: '+reasons.join(' · '),releaseState:release?'cached':'offline',source:release?'cache':'none',checked:false});
    return snapshot();
   }
+  const failures=[platformResult,githubResult].filter(x=>x.status==='rejected').map(x=>x.reason?.message||'Update service unavailable.');
+  const incomplete=failures.length>0;
   const source=release?(release===github?'github':'platform'):'none';
-  await save();emit({error:'',releaseState:release?'published':'none',source,checked:true});
+  await save();emit({error:incomplete?'Update check incomplete: '+failures.join(' · '):'',releaseState:incomplete?'partial':release?'published':'none',source,checked:!incomplete});
   return snapshot();
  }
  async function status(){await init();return snapshot();}
