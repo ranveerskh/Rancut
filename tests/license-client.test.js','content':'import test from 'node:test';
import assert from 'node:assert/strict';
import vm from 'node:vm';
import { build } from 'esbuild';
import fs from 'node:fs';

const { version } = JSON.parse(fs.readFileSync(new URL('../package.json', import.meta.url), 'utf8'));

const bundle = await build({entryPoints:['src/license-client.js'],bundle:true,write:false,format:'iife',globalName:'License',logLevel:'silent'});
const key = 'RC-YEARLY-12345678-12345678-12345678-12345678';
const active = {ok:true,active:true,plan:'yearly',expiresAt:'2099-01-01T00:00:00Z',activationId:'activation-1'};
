@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import { build } from 'esbuild';
+import fs from 'node:fs';
+
+const { version } = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+
+const bundle = await build({entryPoints:['src/license-client.js'],bundle:true,write:false,format:'iife',globalName:'License',logLevel:'silent'});
+const key = 'RC-YEARLY-12345678-12345678-12345678-12345678';
+const active = {ok:true,active:true,plan:'yearly',expiresAt:'2099-01-01T00:00:00Z',activationId:'activation-1'};
