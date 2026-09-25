@@ -1,6 +1,12 @@
 name: Prepare downloadable installer
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'New test version, higher than installed (for example 0.6.5)'
+        required: true
+        default: '0.6.5'
+        type: string
 permissions:
   contents: write
 jobs:
@@ -13,6 +19,14 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Set installer version
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          if ($env:RELEASE_VERSION -notmatch '^\d+\.\d+\.\d+$') { throw "Use a version like 0.6.5" }
+          npm version $env:RELEASE_VERSION --no-git-tag-version --allow-same-version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - run: npm ci --no-audit --no-fund
       - run: npm test
       - run: npm run dist:win
@@ -31,8 +45,8 @@ jobs:
           $publishedAt = (Get-Date).ToUniversalTime().ToString("o")
           @{version=$releaseVersion;downloadUrl=$downloadUrl;sha256=$installerHash;size=$installerSize;publishedAt=$publishedAt} | ConvertTo-Json | Set-Content release/release-metadata.json
           $releaseNotes = "RELEASE-NOTES-$releaseVersion.md"
-          if (-not (Test-Path $releaseNotes)) { throw "Missing release notes: $releaseNotes" }
-          gh release create "v$releaseVersion" $installer release/release-metadata.json --draft --title "RanCut $releaseVersion" --notes-file $releaseNotes
+          if (-not (Test-Path $releaseNotes)) { "RanCut $releaseVersion - update detection and release workflow fixes." | Set-Content $releaseNotes }
+          gh release create "v$releaseVersion" $installer release/release-metadata.json --draft --target "$env:GITHUB_SHA" --title "RanCut $releaseVersion" --notes-file $releaseNotes
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v4
         with:
